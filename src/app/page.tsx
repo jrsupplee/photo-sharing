@@ -1,65 +1,78 @@
-import Image from "next/image";
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import getDb from '@/lib/db';
+import { Event } from '@/types';
 
 export default function Home() {
+  let events: Event[] = [];
+  try {
+    const db = getDb();
+    events = db.prepare('SELECT * FROM events ORDER BY date_start ASC').all() as Event[];
+  } catch {
+    // DB not yet initialized
+  }
+
+  if (events.length === 1) {
+    redirect(`/${events[0].slug}`);
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-cream flex flex-col items-center justify-center px-4">
+      <div className="text-center max-w-xl">
+        <div className="mb-8">
+          <div className="w-16 h-px bg-gold mx-auto mb-6" />
+          <h1 className="font-cormorant text-5xl sm:text-6xl font-light text-stone-700 mb-4 tracking-wide">
+            Wedding Memories
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <p className="text-stone-400 font-light tracking-widest text-xs uppercase">Share & Relive Beautiful Moments</p>
+          <div className="w-16 h-px bg-gold mx-auto mt-6" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {events.length === 0 ? (
+          <div className="space-y-4">
+            <p className="text-stone-500 font-light italic">No events yet.</p>
+            <Link
+              href="/admin"
+              className="inline-block px-8 py-3 border border-stone-300 text-stone-600 text-sm tracking-widest uppercase hover:bg-stone-100 transition-colors"
+            >
+              Admin Login
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4 mt-8">
+            <p className="text-stone-500 font-light text-sm tracking-wider mb-6">Select an event to view photos</p>
+            {events.map(event => (
+              <Link
+                key={event.id}
+                href={`/${event.slug}`}
+                className="block group"
+              >
+                <div className="border border-stone-200 rounded-xl p-6 hover:border-stone-300 hover:bg-white transition-all duration-300 text-left">
+                  <h2 className="font-cormorant text-2xl text-stone-700 group-hover:text-stone-900 transition-colors">
+                    {event.name}
+                  </h2>
+                  {event.date_start && (
+                    <p className="text-stone-400 text-sm mt-1 font-light">
+                      {new Date(event.date_start).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                      {event.date_end && event.date_end !== event.date_start && (
+                        <> – {new Date(event.date_end).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}</>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
