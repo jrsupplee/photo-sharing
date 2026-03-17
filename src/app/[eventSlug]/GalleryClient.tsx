@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Event, Album, Media } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
 
@@ -11,7 +11,6 @@ interface GalleryClientProps {
   albums: Album[];
   media: Media[];
   sessionId: string;
-  currentAlbumId: number | null;
   isAdmin?: boolean;
 }
 
@@ -20,13 +19,11 @@ export default function GalleryClient({
   albums,
   media,
   sessionId,
-  currentAlbumId,
   isAdmin,
 }: GalleryClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [allMedia, setAllMedia] = useState<Media[]>(media);
-  const [activeAlbum, setActiveAlbum] = useState<number | null>(currentAlbumId);
+  const [activeAlbum, setActiveAlbum] = useState<number | null>(null);
 
   // Set session cookie on client
   useEffect(() => {
@@ -35,29 +32,15 @@ export default function GalleryClient({
     }
   }, [sessionId]);
 
-  const refreshMedia = useCallback(async () => {
-    const albumParam = activeAlbum ? `?album=${activeAlbum}` : '';
-    const res = await fetch(`/api/events/${event.slug}/media${albumParam.replace('?album=', '?album=')}`);
-    if (res.ok) {
-      // Reload page to get fresh data
-      router.refresh();
-    }
-  }, [event.slug, activeAlbum, router]);
-
   useEffect(() => {
     setAllMedia(media);
   }, [media]);
 
   const handleAlbumChange = (albumId: number | null) => {
     setActiveAlbum(albumId);
-    const params = new URLSearchParams(searchParams.toString());
-    if (albumId) {
-      params.set('album', albumId.toString());
-    } else {
-      params.delete('album');
-    }
-    router.push(`?${params.toString()}`);
   };
+
+  const displayedMedia = activeAlbum ? allMedia.filter(m => m.album_id === activeAlbum) : allMedia;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -149,7 +132,7 @@ export default function GalleryClient({
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <p className="text-stone-400 text-sm font-light">
-            {allMedia.length} {allMedia.length === 1 ? 'memory' : 'memories'}
+            {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
           </p>
           <Link
             href={`/${event.slug}/upload`}
@@ -161,7 +144,7 @@ export default function GalleryClient({
             Share
           </Link>
         </div>
-        <MediaGrid media={allMedia} sessionId={sessionId} />
+        <MediaGrid media={displayedMedia} sessionId={sessionId} />
       </main>
 
       {/* Floating upload button for desktop */}

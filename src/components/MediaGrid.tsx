@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MasonryPhotoAlbum } from 'react-photo-album';
 import 'react-photo-album/masonry.css';
 import Lightbox from 'yet-another-react-lightbox';
@@ -37,6 +37,10 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   const [editFields, setEditFields] = useState({ uploader_name: '', caption: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMediaItems(media);
+  }, [media]);
 
   const currentMedia = lightboxOpen ? mediaItems[currentIndex] : null;
 
@@ -116,11 +120,12 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   };
 
   const slides = mediaItems.map(item => {
+    const title = item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '';
     if (item.mime_type?.startsWith('video/')) {
       return {
         type: 'video' as const,
         sources: [{ src: `/api/files/${item.storage_key}`, type: item.mime_type }],
-        title: item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '',
+        title,
         description: item.caption || '',
         width: 1280,
         height: 720,
@@ -128,7 +133,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     }
     return {
       src: `/api/files/${item.medium_key ?? item.storage_key}`,
-      title: item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '',
+      title,
       description: item.caption || '',
       width: 1200,
       height: 900,
@@ -323,6 +328,11 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
             );
             return (
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                {currentMedia.album_name && (
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    {currentMedia.album_name}
+                  </span>
+                )}
                 <button
                   onClick={() => handleLike(currentMedia.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: likedIds.has(currentMedia.id) ? '#fb7185' : 'rgba(255,255,255,0.7)' }}

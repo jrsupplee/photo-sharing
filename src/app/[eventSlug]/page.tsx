@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
@@ -8,12 +7,10 @@ import GalleryClient from './GalleryClient';
 
 interface Props {
   params: Promise<{ eventSlug: string }>;
-  searchParams: Promise<{ album?: string }>;
 }
 
-export default async function EventPage({ params, searchParams }: Props) {
+export default async function EventPage({ params }: Props) {
   const { eventSlug } = await params;
-  const { album: albumFilter } = await searchParams;
 
   const event = eventRepo.findBySlug(eventSlug);
   if (!event) notFound();
@@ -27,8 +24,7 @@ export default async function EventPage({ params, searchParams }: Props) {
     sessionId = uuidv4();
   }
 
-  const selectedAlbum = albumFilter ? albums.find(a => a.id === parseInt(albumFilter)) : null;
-  const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, selectedAlbum?.id ?? null);
+  const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, null);
 
   const session = await getSession();
 
@@ -38,7 +34,6 @@ export default async function EventPage({ params, searchParams }: Props) {
       albums={albums}
       media={media}
       sessionId={sessionId}
-      currentAlbumId={albumFilter ? parseInt(albumFilter) : null}
       isAdmin={!!session}
     />
   );
