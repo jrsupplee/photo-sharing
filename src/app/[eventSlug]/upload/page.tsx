@@ -36,12 +36,10 @@ export default async function UploadPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 sm:px-6 py-12">
-        <div className="text-center mb-10">
-          <div className="w-12 h-px bg-stone-300 mx-auto mb-6" />
-          <h1 className="font-cormorant text-4xl font-light text-stone-700 mb-3">Share a Memory</h1>
+      <main className="max-w-lg mx-auto px-4 sm:px-6 py-6">
+        <div className="text-center mb-6">
+          <h1 className="font-cormorant text-4xl font-light text-stone-700 mb-1">Share a Memory</h1>
           <p className="text-stone-400 font-light text-sm">Upload your photos and videos from the celebration</p>
-          <div className="w-12 h-px bg-stone-300 mx-auto mt-6" />
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 sm:p-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Album } from '@/types';
 
 const STORAGE_KEY = 'uploader_name';
@@ -30,6 +30,39 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+  const pasteZoneRef = useRef<HTMLDivElement>(null);
+  const PASTE_PLACEHOLDER = 'Tap here, then long-press and choose Paste';
+
+  const extractFilesFromClipboard = useCallback((items: DataTransferItemList): File[] => {
+    const files: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file' && (item.type.startsWith('image/') || item.type.startsWith('video/'))) {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    return files;
+  }, []);
+
+  // Desktop: Cmd+V / Ctrl+V paste anywhere on the page
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const pasted = extractFilesFromClipboard(e.clipboardData.items);
+      if (pasted.length > 0) setFiles(prev => [...prev, ...pasted]);
+    };
+    document.addEventListener('paste', handler);
+    return () => document.removeEventListener('paste', handler);
+  }, [extractFilesFromClipboard]);
+
+  const handlePasteZone = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const pasted = extractFilesFromClipboard(e.clipboardData.items);
+    if (pasted.length > 0) setFiles(prev => [...prev, ...pasted]);
+    // Restore placeholder text after iOS inserts content
+    if (pasteZoneRef.current) pasteZoneRef.current.textContent = PASTE_PLACEHOLDER;
+  }, [extractFilesFromClipboard]);
 
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -121,12 +154,12 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Drop zone */}
+      {/* Drop zone — desktop only */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
+        className={`relative hidden sm:block border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
           dragOver
             ? 'border-stone-400 bg-stone-50'
             : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50/50'
@@ -143,7 +176,39 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         <p className="text-stone-500 font-light">Drop your photos & videos here</p>
-        <p className="text-stone-400 text-sm mt-1">or click to browse</p>
+        <p className="text-stone-400 text-sm mt-1">or click to browse · or paste</p>
+      </div>
+
+      {/* Mobile file picker + paste zone */}
+      <div className="sm:hidden space-y-3">
+        <input
+          ref={mobileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          onChange={handleFileSelect}
+          className="sr-only"
+        />
+        <button
+          type="button"
+          onClick={() => mobileInputRef.current?.click()}
+          className="w-full border-2 border-dashed border-stone-200 rounded-xl py-6 text-center text-stone-500 font-light hover:border-stone-300 hover:bg-stone-50/50 transition-all"
+        >
+          <svg className="w-8 h-8 mx-auto mb-2 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Tap to choose photos & videos
+        </button>
+        <div
+          ref={pasteZoneRef}
+          contentEditable
+          suppressContentEditableWarning
+          onPaste={handlePasteZone}
+          onInput={(e) => { e.currentTarget.textContent = PASTE_PLACEHOLDER; }}
+          className="w-full py-4 px-4 border border-stone-200 rounded-xl text-center text-stone-400 text-sm font-light focus:outline-none focus:border-stone-400 transition-colors cursor-text"
+        >
+          {PASTE_PLACEHOLDER}
+        </div>
       </div>
 
       {/* File previews */}
