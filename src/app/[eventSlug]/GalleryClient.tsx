@@ -45,6 +45,11 @@ export default function GalleryClient({
 
   const displayedMedia = activeAlbum ? allMedia.filter(m => m.album_id === activeAlbum) : allMedia;
 
+  const albumCounts = allMedia.reduce<Record<number, number>>((acc, m) => {
+    if (m.album_id) acc[m.album_id] = (acc[m.album_id] || 0) + 1;
+    return acc;
+  }, {});
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return null;
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -119,13 +124,16 @@ export default function GalleryClient({
                     <button
                       key={album.id}
                       onClick={() => handleAlbumChange(album.id)}
-                      className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                      className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
                         activeAlbum === album.id && !showDeleted
                           ? 'border-stone-700 text-stone-700'
                           : 'border-transparent text-stone-400 hover:text-stone-600'
                       }`}
                     >
                       {album.name}
+                      {albumCounts[album.id] != null && (
+                        <span className="bg-stone-100 text-stone-400 text-xs px-1.5 py-0.5 rounded-full">{albumCounts[album.id]}</span>
+                      )}
                     </button>
                   ))}
                 </>

@@ -236,7 +236,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeFile(index); }}
-                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
