@@ -1,15 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import {
-  initEventsTable,
-  initAlbumsTable,
-  initMediaTable,
-  initCommentsTable,
-  initLikesTable,
-  initUsersTable,
-  initEventPermissionsTable,
-} from './repositories';
+import { initSchema } from './repositories/schema';
 
 const dbPath = process.env.DATABASE_PATH || './data/wedding.db';
 const absoluteDbPath = path.resolve(process.cwd(), dbPath);
@@ -27,13 +19,7 @@ function getDb(): Database.Database {
     db = new Database(absoluteDbPath);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
-    initEventsTable(db);
-    initAlbumsTable(db);
-    initMediaTable(db);
-    initCommentsTable(db);
-    initLikesTable(db);
-    initUsersTable(db);
-    initEventPermissionsTable(db);
+    initSchema(db);
   }
   return db;
 }

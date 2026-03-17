@@ -1,35 +1,5 @@
-import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { Media } from '@/types';
-
-export function initMediaTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS media (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event_id INTEGER NOT NULL,
-      album_id INTEGER,
-      filename TEXT NOT NULL,
-      original_name TEXT NOT NULL,
-      mime_type TEXT NOT NULL,
-      size INTEGER NOT NULL,
-      caption TEXT,
-      uploader_name TEXT,
-      session_id TEXT,
-      storage_key TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
-    )
-  `);
-
-  const cols = db.prepare('PRAGMA table_info(media)').all() as { name: string }[];
-  const colNames = cols.map(c => c.name);
-  if (!colNames.includes('thumbnail_key')) db.exec('ALTER TABLE media ADD COLUMN thumbnail_key TEXT');
-  if (!colNames.includes('medium_key')) db.exec('ALTER TABLE media ADD COLUMN medium_key TEXT');
-  if (!colNames.includes('session_id')) db.exec('ALTER TABLE media ADD COLUMN session_id TEXT');
-  if (!colNames.includes('deleted_at')) db.exec('ALTER TABLE media ADD COLUMN deleted_at TEXT');
-  if (!colNames.includes('deleted_by')) db.exec('ALTER TABLE media ADD COLUMN deleted_by TEXT');
-}
 
 export const mediaRepo = {
   findById(id: number | string): Media | undefined {

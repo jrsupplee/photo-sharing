@@ -1,30 +1,6 @@
-import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { User } from '@/types';
 import bcrypt from 'bcryptjs';
-
-export function initUsersTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'event_manager',
-      created_at TEXT DEFAULT (datetime('now'))
-    )
-  `);
-
-  const cols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
-  if (!cols.map(c => c.name).includes('session_id')) db.exec('ALTER TABLE users ADD COLUMN session_id TEXT');
-
-  const userCount = (db.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n;
-  if (userCount === 0 && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
-    const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
-    db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, 'admin')`)
-      .run(process.env.ADMIN_EMAIL, 'Admin', hash);
-  }
-}
 
 export const userRepo = {
   findById(id: number | string): User | undefined {

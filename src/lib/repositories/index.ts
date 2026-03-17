@@ -1,7 +1,7 @@
-export { eventRepo, initEventsTable } from './events';
-export { albumRepo, initAlbumsTable } from './albums';
-export { mediaRepo, initMediaTable } from './media';
-export { likeRepo, initLikesTable } from './likes';
-export { commentRepo, initCommentsTable } from './comments';
-export { userRepo, initUsersTable } from './users';
-export { eventPermissionRepo, initEventPermissionsTable } from './event-permissions';
+export { eventRepo } from './events';
+export { albumRepo } from './albums';
+export { mediaRepo } from './media';
+export { likeRepo } from './likes';
+export { commentRepo } from './comments';
+export { userRepo } from './users';
+export { eventPermissionRepo } from './event-permissions';
