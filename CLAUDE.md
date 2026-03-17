@@ -26,12 +26,13 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs `initSchema()` from `src/lib/repositories/schema.ts`, which creates all tables and applies column migrations. **All schema and migration SQL lives in `schema.ts`** — not in `db.ts` or individual repo files. This separation exists to avoid a circular import: repo files import `getDb` from `db.ts`, so `db.ts` must not import from the repos barrel.
 - Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
-- `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the event management UI.
+- `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
+- `media` has a `file_hash` (SHA-256) column used for duplicate detection at upload time. If a hash matches a soft-deleted record and `deleted_by === session_id`, the item is restored instead of rejected.
 - `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form.
 
 ### Storage
 
-`src/lib/storage/` defines a `StorageBackend` interface (`save`, `getUrl`, `delete`). The factory (`src/lib/storage/factory.ts`) picks the backend via `STORAGE_BACKEND` env var (default `disk`). `DiskStorage` writes to `UPLOAD_DIR` (default `./uploads`). Files are served via `src/app/api/files/[...path]/route.ts`. When media is soft-deleted, files are **not** removed from storage.
+`src/lib/storage/` defines a `StorageBackend` interface (`save`, `getUrl`, `delete` — no `read`). The factory (`src/lib/storage/factory.ts`) picks the backend via `STORAGE_BACKEND` env var (default `disk`). `DiskStorage` writes to `UPLOAD_DIR` (default `./uploads`). Files are served via `src/app/api/files/[...path]/route.ts`. When media is soft-deleted, files are **not** removed from storage. Code that needs to read raw file bytes (e.g. the ZIP download route) reads directly from disk via `path.join(UPLOAD_DIR, storage_key)`.
 
 ### Auth and roles
 
@@ -62,10 +63,15 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Route structure
 
-- `src/app/[eventSlug]/` — public gallery; server component fetches media (with `user_liked`) and passes to `GalleryClient` → `MediaGrid`
+- `src/app/[eventSlug]/` — public gallery; server component fetches media (with `user_liked`) and passes to `GalleryClient` → `MediaGrid`. Admins also see a Deleted tab here (not in the manage page).
 - `src/app/[eventSlug]/upload/` — guest upload page; passes `albums` and `default_album_id` to `UploadForm`
-- `src/app/admin/` — login, dashboard, event management (`/admin/events/[id]` has Settings / Media / Deleted tabs)
+- `src/app/admin/` — login, dashboard, event management (`/admin/events/[id]` has General / Albums / Download / Delete tabs)
 - `src/app/api/events/[id]/media/` — POST upload, GET list; `[id]` is the event **slug**
+- `src/app/api/events/[id]/download/` — GET streams a ZIP of event media; accepts `?album_id=`; requires `canManageEvent`
 - `src/app/api/media/[id]/` — PATCH (edit name/caption), DELETE (soft-delete); auth via `session_id` match or `canManageEvent`
 - `src/app/api/media/[id]/restore/` — POST to restore a soft-deleted item; requires `canManageEvent`
 - `src/app/api/media/[id]/likes/` and `.../comments/` — per-media interactions
+
+### MediaGrid
+
+`src/components/MediaGrid.tsx` is used for both the normal gallery and the admin Deleted view. When an `onRestore` prop is provided, the lightbox shows only a Restore button instead of the normal like/comment/edit/delete controls.
