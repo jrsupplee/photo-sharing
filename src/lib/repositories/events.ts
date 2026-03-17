@@ -1,5 +1,19 @@
+import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { Event } from '@/types';
+
+export function initEventsTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      date_start TEXT,
+      date_end TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+}
 
 export const eventRepo = {
   /** Public listing ordered by event date */
