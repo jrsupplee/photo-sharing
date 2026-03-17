@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Event, Album, Media } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
 
@@ -12,6 +13,7 @@ interface GalleryClientProps {
   media: Media[];
   sessionId: string;
   isAdmin?: boolean;
+  deletedMedia?: Media[];
 }
 
 export default function GalleryClient({
@@ -20,10 +22,13 @@ export default function GalleryClient({
   media,
   sessionId,
   isAdmin,
+  deletedMedia: initialDeletedMedia = [],
 }: GalleryClientProps) {
   const router = useRouter();
   const [allMedia, setAllMedia] = useState<Media[]>(media);
   const [activeAlbum, setActiveAlbum] = useState<number | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deletedItems, setDeletedItems] = useState<Media[]>(initialDeletedMedia);
 
   // Set session cookie on client
   useEffect(() => {
@@ -38,6 +43,7 @@ export default function GalleryClient({
 
   const handleAlbumChange = (albumId: number | null) => {
     setActiveAlbum(albumId);
+    setShowDeleted(false);
   };
 
   const displayedMedia = activeAlbum ? allMedia.filter(m => m.album_id === activeAlbum) : allMedia;
@@ -96,33 +102,52 @@ export default function GalleryClient({
       </header>
 
       {/* Album filter tabs */}
-      {albums.length > 1 && (
+      {(albums.length > 1 || isAdmin) && (
         <div className="border-b border-stone-100 bg-white/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => handleAlbumChange(null)}
-                className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors ${
-                  activeAlbum === null
-                    ? 'border-stone-700 text-stone-700'
-                    : 'border-transparent text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                All
-              </button>
-              {albums.map(album => (
+              {albums.length > 1 && (
+                <>
+                  <button
+                    onClick={() => handleAlbumChange(null)}
+                    className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                      activeAlbum === null && !showDeleted
+                        ? 'border-stone-700 text-stone-700'
+                        : 'border-transparent text-stone-400 hover:text-stone-600'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {albums.map(album => (
+                    <button
+                      key={album.id}
+                      onClick={() => handleAlbumChange(album.id)}
+                      className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors ${
+                        activeAlbum === album.id && !showDeleted
+                          ? 'border-stone-700 text-stone-700'
+                          : 'border-transparent text-stone-400 hover:text-stone-600'
+                      }`}
+                    >
+                      {album.name}
+                    </button>
+                  ))}
+                </>
+              )}
+              {isAdmin && (
                 <button
-                  key={album.id}
-                  onClick={() => handleAlbumChange(album.id)}
-                  className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors ${
-                    activeAlbum === album.id
+                  onClick={() => { setShowDeleted(true); setActiveAlbum(null); }}
+                  className={`px-4 py-3 text-sm font-light tracking-widest whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
+                    showDeleted
                       ? 'border-stone-700 text-stone-700'
                       : 'border-transparent text-stone-400 hover:text-stone-600'
                   }`}
                 >
-                  {album.name}
+                  Deleted
+                  {deletedItems.length > 0 && (
+                    <span className="bg-rose-100 text-rose-500 text-xs px-1.5 py-0.5 rounded-full">{deletedItems.length}</span>
+                  )}
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -130,21 +155,46 @@ export default function GalleryClient({
 
       {/* Gallery */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-stone-400 text-sm font-light">
-            {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
-          </p>
-          <Link
-            href={`/${event.slug}/upload`}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white text-xs tracking-widest uppercase hover:bg-stone-700 transition-colors rounded-lg sm:hidden"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Share
-          </Link>
-        </div>
-        <MediaGrid media={displayedMedia} sessionId={sessionId} />
+        {showDeleted ? (
+          <>
+            <p className="text-stone-400 text-sm font-light mb-6">
+              {deletedItems.length} deleted {deletedItems.length === 1 ? 'item' : 'items'}
+            </p>
+            {deletedItems.length === 0 ? (
+              <div className="text-center py-20 text-stone-400">
+                <p className="font-light italic">No deleted media.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {deletedItems.map(item => (
+                  <DeletedCard
+                    key={item.id}
+                    item={item}
+                    onRestore={() => setDeletedItems(prev => prev.filter(m => m.id !== item.id))}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-stone-400 text-sm font-light">
+                {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
+              </p>
+              <Link
+                href={`/${event.slug}/upload`}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white text-xs tracking-widest uppercase hover:bg-stone-700 transition-colors rounded-lg sm:hidden"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Share
+              </Link>
+            </div>
+            <MediaGrid media={displayedMedia} sessionId={sessionId} />
+          </>
+        )}
       </main>
 
       {/* Floating upload button for desktop */}
@@ -157,6 +207,51 @@ export default function GalleryClient({
         </svg>
         Share a Memory
       </Link>
+    </div>
+  );
+}
+
+function DeletedCard({ item, onRestore }: { item: Media; onRestore: () => void }) {
+  const [restoring, setRestoring] = useState(false);
+  const isVideo = item.mime_type?.startsWith('video/');
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    const res = await fetch(`/api/media/${item.id}/restore`, { method: 'POST' });
+    if (res.ok) onRestore();
+    else setRestoring(false);
+  };
+
+  return (
+    <div className={`relative rounded-lg overflow-hidden bg-stone-100 aspect-square ${restoring ? 'opacity-50' : ''}`}>
+      {isVideo ? (
+        <div className="w-full h-full flex items-center justify-center bg-stone-200">
+          <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.867v6.266a1 1 0 01-1.447.902L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
+      ) : (
+        <Image
+          src={`/api/files/${item.medium_key ?? item.storage_key}`}
+          alt={item.original_name}
+          fill
+          className="object-cover opacity-50"
+          sizes="(max-width: 640px) 50vw, 20vw"
+        />
+      )}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20">
+        <div className="text-white text-xs text-center px-2 mb-1">
+          {item.uploader_name && <p>{item.uploader_name}</p>}
+          <p className="text-white/50 text-xs">{new Date(item.deleted_at!).toLocaleDateString()}</p>
+        </div>
+        <button
+          onClick={handleRestore}
+          disabled={restoring}
+          className="px-3 py-1 bg-stone-600/90 text-white text-xs rounded hover:bg-stone-700 transition-colors disabled:opacity-50"
+        >
+          {restoring ? 'Restoring…' : 'Restore'}
+        </button>
+      </div>
     </div>
   );
 }

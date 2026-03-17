@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
+import { eventRepo, albumRepo } from '@/lib/repositories';
 import EventManageClient from './EventManageClient';
 
 interface Props {
@@ -18,8 +18,7 @@ export default async function ManageEventPage({ params }: Props) {
   if (!event) notFound();
 
   const albums = albumRepo.findByEventId(event.id);
-  const media = mediaRepo.findByEventId(event.id);
-  const deletedMedia = mediaRepo.findDeletedByEventId(event.id);
+  const isAdmin = session.user.role === 'admin';
 
   return (
     <div className="min-h-screen bg-cream">
@@ -48,7 +47,7 @@ export default async function ManageEventPage({ params }: Props) {
         </div>
       </header>
 
-      <EventManageClient event={event} albums={albums} media={media} deletedMedia={deletedMedia} />
+      <EventManageClient event={event} albums={albums} isAdmin={isAdmin} />
     </div>
   );
 }

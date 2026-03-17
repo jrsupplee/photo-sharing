@@ -27,6 +27,7 @@ export default async function EventPage({ params }: Props) {
   const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, null);
 
   const session = await getSession();
+  const deletedMedia = session ? mediaRepo.findDeletedByEventId(event.id) : [];
 
   return (
     <GalleryClient
@@ -35,6 +36,7 @@ export default async function EventPage({ params }: Props) {
       media={media}
       sessionId={sessionId}
       isAdmin={!!session}
+      deletedMedia={deletedMedia}
     />
   );
 }
