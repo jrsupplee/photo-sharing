@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Event, Album, Media } from '@/types';
@@ -37,6 +37,24 @@ export default function EventManageClient({ event, albums: initialAlbums, media,
     if (albums[i] === defaultAlbumName) setDefaultAlbumName('');
     setAlbums(prev => prev.filter((_, idx) => idx !== i));
   };
+  const dragIndex = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  const onDragStart = (i: number) => { dragIndex.current = i; };
+  const onDragEnter = (i: number) => { setDragOver(i); };
+  const onDrop = (i: number) => {
+    const from = dragIndex.current;
+    if (from === null || from === i) { setDragOver(null); return; }
+    setAlbums(prev => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(i, 0, item);
+      return next;
+    });
+    dragIndex.current = null;
+    setDragOver(null);
+  };
+  const onDragEnd = () => { dragIndex.current = null; setDragOver(null); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +183,21 @@ export default function EventManageClient({ event, albums: initialAlbums, media,
                 </div>
                 <div className="space-y-2">
                   {albums.map((album, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div
+                      key={index}
+                      draggable
+                      onDragStart={() => onDragStart(index)}
+                      onDragEnter={() => onDragEnter(index)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={() => onDrop(index)}
+                      onDragEnd={onDragEnd}
+                      className={`flex items-center gap-2 rounded-lg transition-colors ${dragOver === index ? 'bg-stone-100' : ''}`}
+                    >
+                      <div className="p-1 cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-500 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8h16M4 16h16" />
+                        </svg>
+                      </div>
                       <input
                         type="text"
                         value={album}

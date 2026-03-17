@@ -73,11 +73,7 @@ export default function GalleryClient({
       {/* Header */}
       <header className="sticky top-0 z-40 bg-cream/90 backdrop-blur-sm border-b border-stone-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-stone-400 hover:text-stone-600 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </Link>
+          <div />
           <div className="text-center">
             <h1 className="font-cormorant text-xl sm:text-2xl text-stone-700 tracking-wide">{event.name}</h1>
             {event.date_start && (
