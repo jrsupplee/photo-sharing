@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import getDb from '@/lib/db';
+import { mediaRepo } from '@/lib/repositories';
 import { getStorage } from '@/lib/storage/factory';
 
 export async function PATCH(
@@ -11,8 +11,7 @@ export async function PATCH(
   const body = await req.json();
   const { uploader_name, caption, session_id } = body;
 
-  const db = getDb();
-  const media = db.prepare('SELECT * FROM media WHERE id = ?').get(id) as { session_id: string | null } | undefined;
+  const media = mediaRepo.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
@@ -22,10 +21,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  db.prepare('UPDATE media SET uploader_name = ?, caption = ? WHERE id = ?')
-    .run(uploader_name || null, caption || null, id);
-
-  const updated = db.prepare('SELECT * FROM media WHERE id = ?').get(id);
+  const updated = mediaRepo.update(id, uploader_name || null, caption || null);
   return NextResponse.json(updated);
 }
 
@@ -39,20 +35,19 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const db = getDb();
-  const storage = getStorage();
 
-  const media = db.prepare('SELECT * FROM media WHERE id = ?').get(id) as { storage_key: string } | undefined;
+  const media = mediaRepo.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
+  const storage = getStorage();
   try {
     await storage.delete(media.storage_key);
   } catch {
     // Continue even if file deletion fails
   }
 
-  db.prepare('DELETE FROM media WHERE id = ?').run(id);
+  mediaRepo.delete(id);
   return NextResponse.json({ success: true });
 }

@@ -16,6 +16,10 @@ There are no tests.
 
 This is a **Next.js 16 App Router** wedding photo sharing app. It has two audiences: guests (no login) and an admin.
 
+### Database access rule
+
+**All database queries must go through the repository objects in `src/lib/repositories/`.** Direct use of `getDb()` or `db.prepare()` outside of `src/lib/repositories/` and `src/lib/db.ts` itself is not permitted. Each table has its own repository file; import from the barrel at `@/lib/repositories`.
+
 ### Data layer
 
 - **SQLite via `better-sqlite3`** — synchronous, single-file DB at `DATABASE_PATH` (default `./data/wedding.db`). Schema and migrations are in `src/lib/db.ts`, which initializes on first call to `getDb()`.

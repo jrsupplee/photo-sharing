@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import getDb from '@/lib/db';
-import { Event } from '@/types';
+import { eventRepo } from '@/lib/repositories';
 import SignOutButton from '../SignOutButton';
 import BackfillVariants from './BackfillVariants';
 
@@ -10,14 +9,7 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect('/admin');
 
-  const db = getDb();
-  const events = db.prepare(`
-    SELECT e.*,
-      (SELECT COUNT(*) FROM media m WHERE m.event_id = e.id) as media_count,
-      (SELECT COUNT(*) FROM albums a WHERE a.event_id = e.id) as album_count
-    FROM events e
-    ORDER BY e.created_at DESC
-  `).all() as (Event & { media_count: number; album_count: number })[];
+  const events = eventRepo.listWithCounts();
 
   return (
     <div className="min-h-screen bg-cream">

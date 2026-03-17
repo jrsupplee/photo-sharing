@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import getDb from '@/lib/db';
-import { Event, Album } from '@/types';
+import { eventRepo, albumRepo } from '@/lib/repositories';
 import UploadForm from '@/components/UploadForm';
 
 interface Props {
@@ -10,12 +9,11 @@ interface Props {
 
 export default async function UploadPage({ params }: Props) {
   const { eventSlug } = await params;
-  const db = getDb();
 
-  const event = db.prepare('SELECT * FROM events WHERE slug = ?').get(eventSlug) as Event | undefined;
+  const event = eventRepo.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = db.prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(event.id) as Album[];
+  const albums = albumRepo.findByEventId(event.id);
 
   return (
     <div className="min-h-screen bg-cream">

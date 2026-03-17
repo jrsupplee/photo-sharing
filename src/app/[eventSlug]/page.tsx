@@ -2,8 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import getDb from '@/lib/db';
-import { Event, Album, Media } from '@/types';
+import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
 import GalleryClient from './GalleryClient';
 
 interface Props {
@@ -14,12 +13,11 @@ interface Props {
 export default async function EventPage({ params, searchParams }: Props) {
   const { eventSlug } = await params;
   const { album: albumFilter } = await searchParams;
-  const db = getDb();
 
-  const event = db.prepare('SELECT * FROM events WHERE slug = ?').get(eventSlug) as Event | undefined;
+  const event = eventRepo.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = db.prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(event.id) as Album[];
+  const albums = albumRepo.findByEventId(event.id);
 
   // Get or create session ID for likes
   const cookieStore = await cookies();
@@ -28,34 +26,14 @@ export default async function EventPage({ params, searchParams }: Props) {
     sessionId = uuidv4();
   }
 
-  let mediaQuery = `
-    SELECT m.*, a.name as album_name,
-      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id) as like_count,
-      (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id AND l.session_id = ?) as user_liked
-    FROM media m
-    LEFT JOIN albums a ON m.album_id = a.id
-    WHERE m.event_id = ?
-  `;
-
-  let mediaParams: (string | number)[] = [sessionId, event.id];
-
-  if (albumFilter) {
-    const selectedAlbum = albums.find(a => a.id === parseInt(albumFilter));
-    if (selectedAlbum) {
-      mediaQuery += ' AND m.album_id = ?';
-      mediaParams = [sessionId, event.id, selectedAlbum.id];
-    }
-  }
-
-  mediaQuery += ' ORDER BY m.created_at DESC';
-  const mediaWithLikes = db.prepare(mediaQuery).all(...mediaParams) as Media[];
+  const selectedAlbum = albumFilter ? albums.find(a => a.id === parseInt(albumFilter)) : null;
+  const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, selectedAlbum?.id ?? null);
 
   return (
     <GalleryClient
       event={event}
       albums={albums}
-      media={mediaWithLikes}
+      media={media}
       sessionId={sessionId}
       currentAlbumId={albumFilter ? parseInt(albumFilter) : null}
     />
@@ -65,8 +43,7 @@ export default async function EventPage({ params, searchParams }: Props) {
 export async function generateMetadata({ params }: Props) {
   const { eventSlug } = await params;
   try {
-    const db = getDb();
-    const event = db.prepare('SELECT * FROM events WHERE slug = ?').get(eventSlug) as Event | undefined;
+    const event = eventRepo.findBySlug(eventSlug);
     if (event) {
       return { title: `${event.name} — Wedding Memories` };
     }

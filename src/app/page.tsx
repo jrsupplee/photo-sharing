@@ -1,13 +1,12 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import getDb from '@/lib/db';
+import { eventRepo } from '@/lib/repositories';
 import { Event } from '@/types';
 
 export default function Home() {
   let events: Event[] = [];
   try {
-    const db = getDb();
-    events = db.prepare('SELECT * FROM events ORDER BY date_start ASC').all() as Event[];
+    events = eventRepo.listByDate();
   } catch {
     // DB not yet initialized
   }

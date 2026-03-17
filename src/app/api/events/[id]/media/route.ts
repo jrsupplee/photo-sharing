@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
-import { getStorage } from '@/lib/storage/factory';
+import { eventRepo, mediaRepo } from '@/lib/repositories';
 import { generateImageVariants } from '@/lib/imageVariants';
+import { getStorage } from '@/lib/storage/factory';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
@@ -10,24 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: slug } = await params;
-  const db = getDb();
 
-  const event = db.prepare('SELECT * FROM events WHERE slug = ?').get(slug) as { id: number } | undefined;
+  const event = eventRepo.findBySlug(slug);
   if (!event) {
     return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   }
 
-  const media = db.prepare(`
-    SELECT m.*, a.name as album_name,
-      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id) as like_count,
-      (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count
-    FROM media m
-    LEFT JOIN albums a ON m.album_id = a.id
-    WHERE m.event_id = ?
-    ORDER BY m.created_at DESC
-  `).all(event.id);
-
-  return NextResponse.json(media);
+  return NextResponse.json(mediaRepo.findByEventSlug(slug));
 }
 
 export async function POST(
@@ -35,9 +24,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: slug } = await params;
-  const db = getDb();
 
-  const event = db.prepare('SELECT * FROM events WHERE slug = ?').get(slug) as { id: number } | undefined;
+  const event = eventRepo.findBySlug(slug);
   if (!event) {
     return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   }
@@ -64,24 +52,20 @@ export async function POST(
     generateImageVariants(buffer, filename, file.type),
   ]);
 
-  const result = db.prepare(`
-    INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    event.id,
-    albumId ? parseInt(albumId) : null,
+  const media = mediaRepo.create({
+    event_id: event.id,
+    album_id: albumId ? parseInt(albumId) : null,
     filename,
-    file.name,
-    file.type,
-    file.size,
-    caption || null,
-    uploaderName || null,
-    sessionId || null,
-    storageKey,
-    variants?.thumbnailKey ?? null,
-    variants?.mediumKey ?? null,
-  );
+    original_name: file.name,
+    mime_type: file.type,
+    size: file.size,
+    caption: caption || null,
+    uploader_name: uploaderName || null,
+    session_id: sessionId || null,
+    storage_key: storageKey,
+    thumbnail_key: variants?.thumbnailKey ?? null,
+    medium_key: variants?.mediumKey ?? null,
+  });
 
-  const media = db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid);
   return NextResponse.json(media, { status: 201 });
 }

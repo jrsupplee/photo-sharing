@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { mediaRepo, likeRepo } from '@/lib/repositories';
 
 export async function GET(
   req: NextRequest,
@@ -7,13 +7,10 @@ export async function GET(
 ) {
   const { id } = await params;
   const sessionId = req.nextUrl.searchParams.get('session_id');
-  const db = getDb();
 
-  const result = db.prepare('SELECT COUNT(*) as count FROM likes WHERE media_id = ?').get(id) as { count: number };
-  const liked = sessionId
-    ? !!db.prepare('SELECT id FROM likes WHERE media_id = ? AND session_id = ?').get(id, sessionId)
-    : false;
-  return NextResponse.json({ count: result.count, liked });
+  const count = likeRepo.countByMediaId(id);
+  const liked = sessionId ? likeRepo.exists(id, sessionId) : false;
+  return NextResponse.json({ count, liked });
 }
 
 export async function POST(
@@ -28,25 +25,18 @@ export async function POST(
     return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
   }
 
-  const db = getDb();
-
-  // Check media exists
-  const media = db.prepare('SELECT id FROM media WHERE id = ?').get(id);
+  const media = mediaRepo.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  // Check if already liked
-  const existing = db.prepare('SELECT id FROM likes WHERE media_id = ? AND session_id = ?').get(id, session_id);
-
-  if (existing) {
-    // Unlike
-    db.prepare('DELETE FROM likes WHERE media_id = ? AND session_id = ?').run(id, session_id);
+  const alreadyLiked = likeRepo.exists(id, session_id);
+  if (alreadyLiked) {
+    likeRepo.delete(id, session_id);
   } else {
-    // Like
-    db.prepare('INSERT INTO likes (media_id, session_id) VALUES (?, ?)').run(id, session_id);
+    likeRepo.create(id, session_id);
   }
 
-  const result = db.prepare('SELECT COUNT(*) as count FROM likes WHERE media_id = ?').get(id) as { count: number };
-  return NextResponse.json({ count: result.count, liked: !existing });
+  const count = likeRepo.countByMediaId(id);
+  return NextResponse.json({ count, liked: !alreadyLiked });
 }

@@ -1,8 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import getDb from '@/lib/db';
-import { Event, Album, Media } from '@/types';
+import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
 import EventManageClient from './EventManageClient';
 
 interface Props {
@@ -14,22 +13,12 @@ export default async function ManageEventPage({ params }: Props) {
   if (!session) redirect('/admin');
 
   const { id } = await params;
-  const db = getDb();
 
-  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(id) as Event | undefined;
+  const event = eventRepo.findById(id);
   if (!event) notFound();
 
-  const albums = db.prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(event.id) as Album[];
-
-  const media = db.prepare(`
-    SELECT m.*, a.name as album_name,
-      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id) as like_count,
-      (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count
-    FROM media m
-    LEFT JOIN albums a ON m.album_id = a.id
-    WHERE m.event_id = ?
-    ORDER BY m.created_at DESC
-  `).all(event.id) as Media[];
+  const albums = albumRepo.findByEventId(event.id);
+  const media = mediaRepo.findByEventId(event.id);
 
   return (
     <div className="min-h-screen bg-cream">
