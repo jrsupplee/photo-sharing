@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
 import { mediaRepo } from '@/lib/repositories';
-import { getStorage } from '@/lib/storage/factory';
 import { canManageEvent } from '@/lib/authorization';
 
 export async function PATCH(
@@ -45,13 +44,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const storage = getStorage();
-  try {
-    await storage.delete(media.storage_key);
-  } catch {
-    // Continue even if file deletion fails
-  }
-
-  mediaRepo.delete(id);
+  mediaRepo.softDelete(id);
   return NextResponse.json({ success: true });
 }

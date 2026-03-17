@@ -27,6 +27,7 @@ export function initMediaTable(db: Database.Database): void {
   if (!colNames.includes('thumbnail_key')) db.exec('ALTER TABLE media ADD COLUMN thumbnail_key TEXT');
   if (!colNames.includes('medium_key')) db.exec('ALTER TABLE media ADD COLUMN medium_key TEXT');
   if (!colNames.includes('session_id')) db.exec('ALTER TABLE media ADD COLUMN session_id TEXT');
+  if (!colNames.includes('deleted_at')) db.exec('ALTER TABLE media ADD COLUMN deleted_at TEXT');
 }
 
 export const mediaRepo = {
@@ -42,8 +43,19 @@ export const mediaRepo = {
         (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count
       FROM media m
       LEFT JOIN albums a ON m.album_id = a.id
-      WHERE m.event_id = ?
+      WHERE m.event_id = ? AND m.deleted_at IS NULL
       ORDER BY m.created_at DESC
+    `).all(eventId) as Media[];
+  },
+
+  /** Soft-deleted items for a given event — admin only */
+  findDeletedByEventId(eventId: number | string): Media[] {
+    return getDb().prepare(`
+      SELECT m.*, a.name as album_name
+      FROM media m
+      LEFT JOIN albums a ON m.album_id = a.id
+      WHERE m.event_id = ? AND m.deleted_at IS NOT NULL
+      ORDER BY m.deleted_at DESC
     `).all(eventId) as Media[];
   },
 
@@ -57,7 +69,7 @@ export const mediaRepo = {
         (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id AND l.session_id = ?) as user_liked
       FROM media m
       LEFT JOIN albums a ON m.album_id = a.id
-      WHERE m.event_id = ?
+      WHERE m.event_id = ? AND m.deleted_at IS NULL
     `;
     const params: (string | number)[] = [sessionId, eventId as number | string];
     if (albumId != null) {
@@ -77,7 +89,7 @@ export const mediaRepo = {
       FROM media m
       LEFT JOIN albums a ON m.album_id = a.id
       INNER JOIN events e ON m.event_id = e.id
-      WHERE e.slug = ?
+      WHERE e.slug = ? AND m.deleted_at IS NULL
       ORDER BY m.created_at DESC
     `).all(slug) as Media[];
   },
@@ -92,17 +104,17 @@ export const mediaRepo = {
   findMissingVariants(): { id: number; storage_key: string; mime_type: string }[] {
     return getDb().prepare(`
       SELECT id, storage_key, mime_type FROM media
-      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL)
+      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL) AND deleted_at IS NULL
     `).all() as { id: number; storage_key: string; mime_type: string }[];
   },
 
   countImages(): number {
-    return (getDb().prepare(`SELECT COUNT(*) as n FROM media WHERE mime_type LIKE 'image/%'`).get() as { n: number }).n;
+    return (getDb().prepare(`SELECT COUNT(*) as n FROM media WHERE mime_type LIKE 'image/%' AND deleted_at IS NULL`).get() as { n: number }).n;
   },
 
   countMissingVariants(): number {
     return (getDb().prepare(`
-      SELECT COUNT(*) as n FROM media WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL)
+      SELECT COUNT(*) as n FROM media WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL) AND deleted_at IS NULL
     `).get() as { n: number }).n;
   },
 
@@ -140,6 +152,14 @@ export const mediaRepo = {
 
   updateVariants(id: number, thumbnailKey: string, mediumKey: string): void {
     getDb().prepare('UPDATE media SET thumbnail_key = ?, medium_key = ? WHERE id = ?').run(thumbnailKey, mediumKey, id);
+  },
+
+  softDelete(id: number | string): void {
+    getDb().prepare(`UPDATE media SET deleted_at = datetime('now') WHERE id = ?`).run(id);
+  },
+
+  restore(id: number | string): void {
+    getDb().prepare('UPDATE media SET deleted_at = NULL WHERE id = ?').run(id);
   },
 
   delete(id: number | string): void {

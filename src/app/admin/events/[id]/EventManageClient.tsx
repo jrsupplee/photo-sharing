@@ -9,9 +9,10 @@ interface Props {
   event: Event;
   albums: Album[];
   media: Media[];
+  deletedMedia: Media[];
 }
 
-export default function EventManageClient({ event, albums: initialAlbums, media }: Props) {
+export default function EventManageClient({ event, albums: initialAlbums, media, deletedMedia: initialDeletedMedia }: Props) {
   const router = useRouter();
   const [name, setName] = useState(event.name);
   const [dateStart, setDateStart] = useState(event.date_start || '');
@@ -24,7 +25,8 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings' | 'media'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'media' | 'deleted'>('settings');
+  const [deletedItems, setDeletedItems] = useState<Media[]>(initialDeletedMedia);
 
   const addAlbum = () => setAlbums(prev => [...prev, '']);
   const updateAlbum = (i: number, v: string) => {
@@ -99,6 +101,19 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
         >
           Media
           <span className="bg-stone-100 text-stone-500 text-xs px-1.5 py-0.5 rounded-full">{media.length}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('deleted')}
+          className={`px-6 py-3 text-sm tracking-wider border-b-2 transition-colors -mb-px flex items-center gap-2 ${
+            activeTab === 'deleted'
+              ? 'border-stone-700 text-stone-700'
+              : 'border-transparent text-stone-400 hover:text-stone-600'
+          }`}
+        >
+          Deleted
+          {deletedItems.length > 0 && (
+            <span className="bg-rose-100 text-rose-500 text-xs px-1.5 py-0.5 rounded-full">{deletedItems.length}</span>
+          )}
         </button>
       </div>
 
@@ -240,6 +255,26 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
         </div>
       )}
 
+      {activeTab === 'deleted' && (
+        <div>
+          {deletedItems.length === 0 ? (
+            <div className="text-center py-20 text-stone-400">
+              <p className="font-light italic">No deleted media.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {deletedItems.map(item => (
+                <DeletedMediaCard
+                  key={item.id}
+                  item={item}
+                  onRestore={() => setDeletedItems(prev => prev.filter(m => m.id !== item.id))}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'media' && (
         <div>
           {media.length === 0 ? (
@@ -259,6 +294,51 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
         </div>
       )}
     </main>
+  );
+}
+
+function DeletedMediaCard({ item, onRestore }: { item: Media; onRestore: () => void }) {
+  const [restoring, setRestoring] = useState(false);
+  const isVideo = item.mime_type?.startsWith('video/');
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    const res = await fetch(`/api/media/${item.id}/restore`, { method: 'POST' });
+    if (res.ok) onRestore();
+    else setRestoring(false);
+  };
+
+  return (
+    <div className={`relative rounded-lg overflow-hidden bg-stone-100 aspect-square ${restoring ? 'opacity-50' : ''}`}>
+      {isVideo ? (
+        <div className="w-full h-full flex items-center justify-center bg-stone-200">
+          <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.867v6.266a1 1 0 01-1.447.902L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
+      ) : (
+        <Image
+          src={`/api/files/${item.storage_key}`}
+          alt={item.original_name}
+          fill
+          className="object-cover opacity-50"
+          sizes="(max-width: 640px) 50vw, 20vw"
+        />
+      )}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20">
+        <div className="text-white text-xs text-center px-2 mb-1">
+          {item.uploader_name && <p>{item.uploader_name}</p>}
+          <p className="text-white/50 text-xs">{new Date(item.deleted_at!).toLocaleDateString()}</p>
+        </div>
+        <button
+          onClick={handleRestore}
+          disabled={restoring}
+          className="px-3 py-1 bg-stone-600/90 text-white text-xs rounded hover:bg-stone-700 transition-colors disabled:opacity-50"
+        >
+          {restoring ? 'Restoring…' : 'Restore'}
+        </button>
+      </div>
+    </div>
   );
 }
 

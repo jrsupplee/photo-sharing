@@ -19,6 +19,7 @@ export default async function ManageEventPage({ params }: Props) {
 
   const albums = albumRepo.findByEventId(event.id);
   const media = mediaRepo.findByEventId(event.id);
+  const deletedMedia = mediaRepo.findDeletedByEventId(event.id);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -47,7 +48,7 @@ export default async function ManageEventPage({ params }: Props) {
         </div>
       </header>
 
-      <EventManageClient event={event} albums={albums} media={media} />
+      <EventManageClient event={event} albums={albums} media={media} deletedMedia={deletedMedia} />
     </div>
   );
 }
