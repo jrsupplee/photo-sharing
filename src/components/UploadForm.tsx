@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Album } from '@/types';
+
+const STORAGE_KEY = 'uploader_name';
 
 interface UploadFormProps {
   eventSlug: string;
@@ -13,6 +15,11 @@ export default function UploadForm({ eventSlug, albums, onUploadComplete }: Uplo
   const [files, setFiles] = useState<File[]>([]);
   const [uploaderName, setUploaderName] = useState('');
   const [caption, setCaption] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) setUploaderName(saved);
+  }, []);
   const [albumId, setAlbumId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -45,6 +52,8 @@ export default function UploadForm({ eventSlug, albums, onUploadComplete }: Uplo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
+
+    if (uploaderName) localStorage.setItem(STORAGE_KEY, uploaderName);
 
     setUploading(true);
     setProgress(0);
