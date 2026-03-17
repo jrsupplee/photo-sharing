@@ -8,10 +8,11 @@ const STORAGE_KEY = 'uploader_name';
 interface UploadFormProps {
   eventSlug: string;
   albums: Album[];
+  defaultAlbumId?: number | null;
   onUploadComplete?: () => void;
 }
 
-export default function UploadForm({ eventSlug, albums, onUploadComplete }: UploadFormProps) {
+export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUploadComplete }: UploadFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploaderName, setUploaderName] = useState('');
   const [caption, setCaption] = useState('');
@@ -20,7 +21,11 @@ export default function UploadForm({ eventSlug, albums, onUploadComplete }: Uplo
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setUploaderName(saved);
   }, []);
-  const [albumId, setAlbumId] = useState('');
+  const [albumId, setAlbumId] = useState<string>(() =>
+    defaultAlbumId != null && albums.some(a => a.id === defaultAlbumId)
+      ? String(defaultAlbumId)
+      : ''
+  );
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);

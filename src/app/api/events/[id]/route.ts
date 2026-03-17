@@ -40,13 +40,20 @@ export async function PUT(
   }
 
   const body = await req.json();
-  const { name, date_start, date_end, albums } = body;
+  const { name, date_start, date_end, albums, default_album_name } = body;
 
   const event = eventRepo.update(id, name, date_start || null, date_end || null);
 
   if (albums && Array.isArray(albums)) {
     albumRepo.replaceForEvent(id, albums);
   }
+
+  // Resolve default album by name after replacement (IDs change on every replace)
+  const newAlbums = albumRepo.findByEventId(id);
+  const defaultAlbum = default_album_name
+    ? newAlbums.find(a => a.name === default_album_name) ?? null
+    : null;
+  eventRepo.setDefaultAlbum(id, defaultAlbum?.id ?? null);
 
   return NextResponse.json(event);
 }

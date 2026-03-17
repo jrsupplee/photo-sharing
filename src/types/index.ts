@@ -4,6 +4,7 @@ export interface Event {
   name: string;
   date_start: string | null;
   date_end: string | null;
+  default_album_id: number | null;
   created_at: string;
 }
 

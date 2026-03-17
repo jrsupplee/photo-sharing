@@ -13,6 +13,11 @@ export function initEventsTable(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now'))
     )
   `);
+
+  const cols = db.prepare('PRAGMA table_info(events)').all() as { name: string }[];
+  if (!cols.map(c => c.name).includes('default_album_id')) {
+    db.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
+  }
 }
 
 export const eventRepo = {
@@ -84,6 +89,10 @@ export const eventRepo = {
     db.prepare('UPDATE events SET name = ?, date_start = ?, date_end = ? WHERE id = ?')
       .run(name, dateStart, dateEnd, id);
     return db.prepare('SELECT * FROM events WHERE id = ?').get(id) as Event;
+  },
+
+  setDefaultAlbum(id: number | string, albumId: number | null): void {
+    getDb().prepare('UPDATE events SET default_album_id = ? WHERE id = ?').run(albumId, id);
   },
 
   delete(id: number | string): void {

@@ -17,6 +17,9 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
   const [dateStart, setDateStart] = useState(event.date_start || '');
   const [dateEnd, setDateEnd] = useState(event.date_end || '');
   const [albums, setAlbums] = useState<string[]>(initialAlbums.map(a => a.name));
+  const [defaultAlbumName, setDefaultAlbumName] = useState<string>(
+    initialAlbums.find(a => a.id === event.default_album_id)?.name ?? ''
+  );
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -24,8 +27,14 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
   const [activeTab, setActiveTab] = useState<'settings' | 'media'>('settings');
 
   const addAlbum = () => setAlbums(prev => [...prev, '']);
-  const updateAlbum = (i: number, v: string) => setAlbums(prev => prev.map((a, idx) => idx === i ? v : a));
-  const removeAlbum = (i: number) => setAlbums(prev => prev.filter((_, idx) => idx !== i));
+  const updateAlbum = (i: number, v: string) => {
+    if (albums[i] === defaultAlbumName) setDefaultAlbumName(v);
+    setAlbums(prev => prev.map((a, idx) => idx === i ? v : a));
+  };
+  const removeAlbum = (i: number) => {
+    if (albums[i] === defaultAlbumName) setDefaultAlbumName('');
+    setAlbums(prev => prev.filter((_, idx) => idx !== i));
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +47,7 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
         date_start: dateStart || null,
         date_end: dateEnd || null,
         albums: albums.filter(a => a.trim()),
+        default_album_name: defaultAlbumName || null,
       }),
     });
     if (res.ok) {
@@ -157,6 +167,23 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
                   ))}
                 </div>
               </div>
+
+              {albums.filter(a => a.trim()).length > 0 && (
+                <div>
+                  <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Default Upload Album</label>
+                  <select
+                    value={defaultAlbumName}
+                    onChange={e => setDefaultAlbumName(e.target.value)}
+                    className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm bg-white"
+                  >
+                    <option value="">No default</option>
+                    {albums.filter(a => a.trim()).map((album, i) => (
+                      <option key={i} value={album}>{album}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-stone-400 mt-1 font-light">Guest uploads will be placed in this album by default</p>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 pt-2">
                 <button
