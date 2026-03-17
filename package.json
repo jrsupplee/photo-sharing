@@ -17,8 +17,10 @@
     "next-auth": "^4.24.13",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-photo-album": "^3.5.1",
     "sharp": "^0.34.5",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "yet-another-react-lightbox": "^3.29.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
