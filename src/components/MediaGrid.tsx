@@ -15,9 +15,10 @@ interface MediaGridProps {
   media: Media[];
   sessionId: string;
   isAdmin?: boolean;
+  onRestore?: (id: number) => void;
 }
 
-export default function MediaGrid({ media, sessionId, isAdmin }: MediaGridProps) {
+export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: MediaGridProps) {
   const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -36,6 +37,7 @@ export default function MediaGrid({ media, sessionId, isAdmin }: MediaGridProps)
   const [editFields, setEditFields] = useState({ uploader_name: '', caption: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
 
   useEffect(() => {
     setMediaItems(media);
@@ -99,6 +101,17 @@ export default function MediaGrid({ media, sessionId, isAdmin }: MediaGridProps)
       setMediaItems(prev => prev.filter(m => m.id !== mediaId));
     }
     setDeletingId(null);
+  };
+
+  const handleRestore = async (mediaId: number) => {
+    setRestoringId(mediaId);
+    const res = await fetch(`/api/media/${mediaId}/restore`, { method: 'POST' });
+    if (res.ok) {
+      setLightboxOpen(false);
+      setMediaItems(prev => prev.filter(m => m.id !== mediaId));
+      onRestore?.(mediaId);
+    }
+    setRestoringId(null);
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
@@ -328,6 +341,17 @@ export default function MediaGrid({ media, sessionId, isAdmin }: MediaGridProps)
                     {submittingComment ? 'Posting…' : 'Post Comment'}
                   </button>
                 </form>
+              </div></>
+            );
+            if (onRestore) return (
+              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                <button
+                  onClick={() => handleRestore(currentMedia.id)}
+                  disabled={restoringId === currentMedia.id}
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, color: 'white', fontSize: '0.875rem', letterSpacing: '0.05em', padding: '0.5rem 1.5rem', cursor: 'pointer', opacity: restoringId === currentMedia.id ? 0.5 : 1 }}
+                >
+                  {restoringId === currentMedia.id ? 'Restoring…' : 'Restore'}
+                </button>
               </div></>
             );
             return (
