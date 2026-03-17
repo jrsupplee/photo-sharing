@@ -44,6 +44,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  mediaRepo.softDelete(id);
+  const deletedBy = session?.user?.session_id ?? sessionId ?? null;
+  mediaRepo.softDelete(id, deletedBy);
   return NextResponse.json({ success: true });
 }

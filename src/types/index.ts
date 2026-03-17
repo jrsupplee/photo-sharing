@@ -27,6 +27,7 @@ export interface Media {
   uploader_name: string | null;
   session_id: string | null;
   deleted_at: string | null;
+  deleted_by: string | null;
   storage_key: string;
   thumbnail_key: string | null;
   medium_key: string | null;

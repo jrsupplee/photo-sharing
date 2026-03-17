@@ -28,6 +28,7 @@ export function initMediaTable(db: Database.Database): void {
   if (!colNames.includes('medium_key')) db.exec('ALTER TABLE media ADD COLUMN medium_key TEXT');
   if (!colNames.includes('session_id')) db.exec('ALTER TABLE media ADD COLUMN session_id TEXT');
   if (!colNames.includes('deleted_at')) db.exec('ALTER TABLE media ADD COLUMN deleted_at TEXT');
+  if (!colNames.includes('deleted_by')) db.exec('ALTER TABLE media ADD COLUMN deleted_by TEXT');
 }
 
 export const mediaRepo = {
@@ -154,8 +155,8 @@ export const mediaRepo = {
     getDb().prepare('UPDATE media SET thumbnail_key = ?, medium_key = ? WHERE id = ?').run(thumbnailKey, mediumKey, id);
   },
 
-  softDelete(id: number | string): void {
-    getDb().prepare(`UPDATE media SET deleted_at = datetime('now') WHERE id = ?`).run(id);
+  softDelete(id: number | string, deletedBy: string | null): void {
+    getDb().prepare(`UPDATE media SET deleted_at = datetime('now'), deleted_by = ? WHERE id = ?`).run(deletedBy, id);
   },
 
   restore(id: number | string): void {
