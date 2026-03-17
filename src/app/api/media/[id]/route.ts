@@ -27,7 +27,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
@@ -38,8 +38,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  if (!canManageEvent(session, media.event_id)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const sessionId = req.nextUrl.searchParams.get('session_id');
+  const isOwner = sessionId != null && media.session_id === sessionId;
+
+  if (!canManageEvent(session, media.event_id) && !isOwner) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
   const storage = getStorage();

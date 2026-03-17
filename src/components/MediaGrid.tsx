@@ -36,6 +36,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   const [showEdit, setShowEdit] = useState(false);
   const [editFields, setEditFields] = useState({ uploader_name: '', caption: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const currentMedia = lightboxOpen ? mediaItems[currentIndex] : null;
 
@@ -84,6 +85,17 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
       setNewComment({ author_name: '', body: '' });
     }
     setSubmittingComment(false);
+  };
+
+  const handleDelete = async (mediaId: number) => {
+    if (!confirm('Delete this photo? This cannot be undone.')) return;
+    setDeletingId(mediaId);
+    const res = await fetch(`/api/media/${mediaId}?session_id=${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+    if (res.ok) {
+      setLightboxOpen(false);
+      setMediaItems(prev => prev.filter(m => m.id !== mediaId));
+    }
+    setDeletingId(null);
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
@@ -330,14 +342,25 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                   <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>{commentCounts[currentMedia.id] || 0}</span>
                 </button>
                 {canEdit && (
-                  <button
-                    onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '' }); setShowEdit(true); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '' }); setShowEdit(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
+                    >
+                      <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(currentMedia.id)}
+                      disabled={deletingId === currentMedia.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(251,113,133,0.8)', opacity: deletingId === currentMedia.id ? 0.5 : 1 }}
+                    >
+                      <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </>
                 )}
               </div>
             );
