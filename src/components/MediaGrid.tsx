@@ -19,6 +19,7 @@ interface MediaGridProps {
 }
 
 export default function MediaGrid({ media, sessionId }: MediaGridProps) {
+  const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
@@ -32,8 +33,11 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   );
   const [newComment, setNewComment] = useState({ author_name: '', body: '' });
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editFields, setEditFields] = useState({ uploader_name: '', caption: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
-  const currentMedia = lightboxOpen ? media[currentIndex] : null;
+  const currentMedia = lightboxOpen ? mediaItems[currentIndex] : null;
 
   const handleLike = async (mediaId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -71,7 +75,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     const res = await fetch(`/api/media/${currentMedia.id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newComment),
+      body: JSON.stringify({ ...newComment, session_id: sessionId }),
     });
     if (res.ok) {
       const comment = await res.json();
@@ -82,12 +86,29 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     setSubmittingComment(false);
   };
 
-  const slides = media.map(item => {
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentMedia) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/media/${currentMedia.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...editFields, session_id: sessionId }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setMediaItems(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+      setShowEdit(false);
+    }
+    setSavingEdit(false);
+  };
+
+  const slides = mediaItems.map(item => {
     if (item.mime_type?.startsWith('video/')) {
       return {
         type: 'video' as const,
         sources: [{ src: `/api/files/${item.storage_key}`, type: item.mime_type }],
-        title: item.uploader_name || '',
+        title: item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '',
         description: item.caption || '',
         width: 1280,
         height: 720,
@@ -95,14 +116,14 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     }
     return {
       src: `/api/files/${item.medium_key ?? item.storage_key}`,
-      title: item.uploader_name || '',
+      title: item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '',
       description: item.caption || '',
       width: 1200,
       height: 900,
     };
   });
 
-  const photos = media.map((item, index) => ({
+  const photos = mediaItems.map((item, index) => ({
     src: `/api/files/${item.thumbnail_key ?? item.storage_key}`,
     width: 4,
     height: item.mime_type?.startsWith('video/') ? 3 : 4,
@@ -110,7 +131,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     index,
   }));
 
-  if (media.length === 0) {
+  if (mediaItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-stone-400">
         <svg className="w-16 h-16 mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,7 +155,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
         }}
         render={{
           photo: ({ onClick }, { photo, index: photoIndex }) => {
-            const item = media[(photo as typeof photos[0]).index ?? photoIndex];
+            const item = mediaItems[(photo as typeof photos[0]).index ?? photoIndex];
             const isVideo = item.mime_type?.startsWith('video/');
             const isLiked = likedIds.has(item.id);
             const count = likeCounts[item.id] || 0;
@@ -158,7 +179,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-2">
                     {item.caption && <p className="text-white text-xs font-light italic mb-0.5 line-clamp-2">{item.caption}</p>}
-                    {item.uploader_name && <p className="text-white/70 text-xs">{item.uploader_name}</p>}
+                    {item.uploader_name && <p className="text-white/70 text-xs">Uploaded by: {item.uploader_name}</p>}
                   </div>
                 </div>
 
@@ -188,9 +209,9 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
       <Lightbox
         open={lightboxOpen}
         index={currentIndex}
-        close={() => { setLightboxOpen(false); setShowComments(false); }}
+        close={() => { setLightboxOpen(false); setShowComments(false); setShowEdit(false); }}
         slides={slides}
-        on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setComments([]); } }}
+        on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setShowEdit(false); setComments([]); } }}
         plugins={[Captions, Counter, Video]}
         captions={{ showToggle: true, descriptionTextAlign: 'center' }}
         styles={{
@@ -201,6 +222,42 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
         render={{
           controls: () => {
             if (!currentMedia) return null;
+            const canEdit = currentMedia.session_id === sessionId;
+            if (showEdit) return (
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Edit Photo</span>
+                  <button onClick={() => setShowEdit(false)} style={{ color: 'rgba(255,255,255,0.4)', padding: '0.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    <svg style={{ width: 16, height: 16 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <form onSubmit={handleEditSave} style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Your name"
+                    value={editFields.uploader_name}
+                    onChange={e => setEditFields(p => ({ ...p, uploader_name: e.target.value }))}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Caption"
+                    value={editFields.caption}
+                    onChange={e => setEditFields(p => ({ ...p, caption: e.target.value }))}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 4, color: 'white', fontSize: '0.875rem', padding: '0.5rem', cursor: 'pointer', opacity: savingEdit ? 0.5 : 1 }}
+                  >
+                    {savingEdit ? 'Saving…' : 'Save'}
+                  </button>
+                </form>
+              </div>
+            );
             if (showComments) return (
               <div
                 style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, maxHeight: '60vh', paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}
@@ -272,6 +329,16 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                   </svg>
                   <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)' }}>{commentCounts[currentMedia.id] || 0}</span>
                 </button>
+                {canEdit && (
+                  <button
+                    onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '' }); setShowEdit(true); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
+                  >
+                    <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                )}
               </div>
             );
           }

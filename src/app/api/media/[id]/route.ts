@@ -3,6 +3,32 @@ import { getSession } from '@/lib/getSession';
 import getDb from '@/lib/db';
 import { getStorage } from '@/lib/storage/factory';
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const body = await req.json();
+  const { uploader_name, caption, session_id } = body;
+
+  const db = getDb();
+  const media = db.prepare('SELECT * FROM media WHERE id = ?').get(id) as { session_id: string | null } | undefined;
+  if (!media) {
+    return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+  }
+
+  const session = await getSession();
+  if (!session && (!session_id || media.session_id !== session_id)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
+  db.prepare('UPDATE media SET uploader_name = ?, caption = ? WHERE id = ?')
+    .run(uploader_name || null, caption || null, id);
+
+  const updated = db.prepare('SELECT * FROM media WHERE id = ?').get(id);
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

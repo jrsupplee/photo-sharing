@@ -47,6 +47,7 @@ export async function POST(
   const caption = formData.get('caption') as string | null;
   const uploaderName = formData.get('uploader_name') as string | null;
   const albumId = formData.get('album_id') as string | null;
+  const sessionId = formData.get('session_id') as string | null;
 
   if (!file) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -64,8 +65,8 @@ export async function POST(
   ]);
 
   const result = db.prepare(`
-    INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, storage_key, thumbnail_key, medium_key)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     event.id,
     albumId ? parseInt(albumId) : null,
@@ -75,6 +76,7 @@ export async function POST(
     file.size,
     caption || null,
     uploaderName || null,
+    sessionId || null,
     storageKey,
     variants?.thumbnailKey ?? null,
     variants?.mediumKey ?? null,

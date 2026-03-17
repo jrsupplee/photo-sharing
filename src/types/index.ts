@@ -24,6 +24,7 @@ export interface Media {
   size: number;
   caption: string | null;
   uploader_name: string | null;
+  session_id: string | null;
   storage_key: string;
   thumbnail_key: string | null;
   medium_key: string | null;
@@ -39,6 +40,7 @@ export interface Comment {
   media_id: number;
   author_name: string;
   body: string;
+  session_id: string | null;
   created_at: string;
 }
 

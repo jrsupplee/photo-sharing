@@ -21,7 +21,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { author_name, body: commentBody } = body;
+  const { author_name, body: commentBody, session_id } = body;
 
   if (!author_name || !commentBody) {
     return NextResponse.json({ error: 'Author name and body are required' }, { status: 400 });
@@ -36,8 +36,8 @@ export async function POST(
   }
 
   const result = db.prepare(`
-    INSERT INTO comments (media_id, author_name, body) VALUES (?, ?, ?)
-  `).run(id, author_name, commentBody);
+    INSERT INTO comments (media_id, author_name, body, session_id) VALUES (?, ?, ?, ?)
+  `).run(id, author_name, commentBody, session_id || null);
 
   const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(result.lastInsertRowid);
   return NextResponse.json(comment, { status: 201 });

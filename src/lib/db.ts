@@ -54,6 +54,7 @@ function initializeSchema() {
       size INTEGER NOT NULL,
       caption TEXT,
       uploader_name TEXT,
+      session_id TEXT,
       storage_key TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
@@ -65,6 +66,7 @@ function initializeSchema() {
       media_id INTEGER NOT NULL,
       author_name TEXT NOT NULL,
       body TEXT NOT NULL,
+      session_id TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
     );
@@ -86,6 +88,14 @@ function initializeSchema() {
   }
   if (!colNames.includes('medium_key')) {
     database.exec(`ALTER TABLE media ADD COLUMN medium_key TEXT`);
+  }
+  if (!colNames.includes('session_id')) {
+    database.exec(`ALTER TABLE media ADD COLUMN session_id TEXT`);
+  }
+
+  const commentCols = database.prepare(`PRAGMA table_info(comments)`).all() as { name: string }[];
+  if (!commentCols.map(c => c.name).includes('session_id')) {
+    database.exec(`ALTER TABLE comments ADD COLUMN session_id TEXT`);
   }
 }
 

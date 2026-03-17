@@ -54,6 +54,7 @@ export default function UploadForm({ eventSlug, albums, onUploadComplete }: Uplo
     if (files.length === 0) return;
 
     if (uploaderName) localStorage.setItem(STORAGE_KEY, uploaderName);
+    const sessionId = document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? null;
 
     setUploading(true);
     setProgress(0);
@@ -67,6 +68,7 @@ export default function UploadForm({ eventSlug, albums, onUploadComplete }: Uplo
       if (uploaderName) formData.append('uploader_name', uploaderName);
       if (caption) formData.append('caption', caption);
       if (albumId) formData.append('album_id', albumId);
+      if (sessionId) formData.append('session_id', sessionId);
 
       try {
         const res = await fetch(`/api/events/${eventSlug}/media`, {

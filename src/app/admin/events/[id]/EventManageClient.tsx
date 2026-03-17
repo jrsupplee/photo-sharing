@@ -237,15 +237,67 @@ export default function EventManageClient({ event, albums: initialAlbums, media 
 
 function MediaCard({ item, onDelete }: { item: Media; onDelete: () => void }) {
   const [deleting, setDeleting] = useState(false);
-  const isVideo = item.mime_type?.startsWith('video/');
+  const [editing, setEditing] = useState(false);
+  const [editFields, setEditFields] = useState({ uploader_name: item.uploader_name || '', caption: item.caption || '' });
+  const [saving, setSaving] = useState(false);
+  const [localItem, setLocalItem] = useState(item);
+  const isVideo = localItem.mime_type?.startsWith('video/');
 
   const handleDelete = async () => {
     if (!confirm('Delete this photo?')) return;
     setDeleting(true);
-    const res = await fetch(`/api/media/${item.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/media/${localItem.id}`, { method: 'DELETE' });
     if (res.ok) onDelete();
     else setDeleting(false);
   };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const res = await fetch(`/api/media/${localItem.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editFields),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setLocalItem((prev: Media) => ({ ...prev, ...updated }));
+      setEditing(false);
+    }
+    setSaving(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="rounded-lg bg-white border border-stone-200 p-3 flex flex-col gap-2">
+        <p className="text-xs text-stone-400 truncate">{localItem.original_name}</p>
+        <form onSubmit={handleEditSave} className="flex flex-col gap-2">
+          <input
+            type="text"
+            placeholder="Name"
+            value={editFields.uploader_name}
+            onChange={e => setEditFields(p => ({ ...p, uploader_name: e.target.value }))}
+            className="w-full border border-stone-200 rounded px-2 py-1.5 text-stone-700 text-xs focus:outline-none focus:border-stone-400"
+          />
+          <input
+            type="text"
+            placeholder="Caption"
+            value={editFields.caption}
+            onChange={e => setEditFields(p => ({ ...p, caption: e.target.value }))}
+            className="w-full border border-stone-200 rounded px-2 py-1.5 text-stone-700 text-xs focus:outline-none focus:border-stone-400"
+          />
+          <div className="flex gap-1.5">
+            <button type="submit" disabled={saving} className="flex-1 py-1 bg-stone-800 text-white text-xs rounded hover:bg-stone-700 transition-colors disabled:opacity-50">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="flex-1 py-1 border border-stone-200 text-stone-500 text-xs rounded hover:bg-stone-50 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative group rounded-lg overflow-hidden bg-stone-100 aspect-square ${deleting ? 'opacity-50' : ''}`}>
@@ -257,8 +309,8 @@ function MediaCard({ item, onDelete }: { item: Media; onDelete: () => void }) {
         </div>
       ) : (
         <Image
-          src={`/api/files/${item.storage_key}`}
-          alt={item.original_name}
+          src={`/api/files/${localItem.storage_key}`}
+          alt={localItem.original_name}
           fill
           className="object-cover"
           sizes="(max-width: 640px) 50vw, 20vw"
@@ -266,20 +318,28 @@ function MediaCard({ item, onDelete }: { item: Media; onDelete: () => void }) {
       )}
       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
         <div className="text-white text-xs text-center px-2">
-          {item.uploader_name && <p>{item.uploader_name}</p>}
-          <p className="text-white/60">{item.like_count} ♥ · {item.comment_count} comments</p>
+          {localItem.uploader_name && <p>{localItem.uploader_name}</p>}
+          <p className="text-white/60">{localItem.like_count} ♥ · {localItem.comment_count} comments</p>
         </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="px-3 py-1 bg-rose-500/90 text-white text-xs rounded hover:bg-rose-600 transition-colors"
-        >
-          Delete
-        </button>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => { setEditFields({ uploader_name: localItem.uploader_name || '', caption: localItem.caption || '' }); setEditing(true); }}
+            className="px-3 py-1 bg-stone-600/90 text-white text-xs rounded hover:bg-stone-700 transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="px-3 py-1 bg-rose-500/90 text-white text-xs rounded hover:bg-rose-600 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
       </div>
-      {item.album_name && (
+      {localItem.album_name && (
         <div className="absolute bottom-1 left-1">
-          <span className="bg-black/40 text-white text-xs px-1.5 py-0.5 rounded">{item.album_name}</span>
+          <span className="bg-black/40 text-white text-xs px-1.5 py-0.5 rounded">{localItem.album_name}</span>
         </div>
       )}
     </div>
