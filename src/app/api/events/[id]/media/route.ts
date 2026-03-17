@@ -71,7 +71,7 @@ export async function POST(
     generateImageVariants(buffer, filename, file.type),
   ]);
 
-  const media = mediaTable.create({
+  const media = mediaTable.insert({
     event_id: event.id,
     album_id: albumId ? parseInt(albumId) : null,
     filename,

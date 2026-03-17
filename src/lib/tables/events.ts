@@ -64,7 +64,7 @@ export const eventTable = {
     return !!getDb().prepare('SELECT id FROM events WHERE slug = ?').get(slug);
   },
 
-  create(slug: string, name: string, dateStart: string | null, dateEnd: string | null, albums: string[]): Event {
+  insert(slug: string, name: string, dateStart: string | null, dateEnd: string | null, albums: string[]): Event {
     const db = getDb();
     const insertEvent = db.prepare('INSERT INTO events (slug, name, date_start, date_end) VALUES (?, ?, ?, ?)');
     const insertAlbum = db.prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)');

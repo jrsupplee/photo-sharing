@@ -44,7 +44,7 @@ export const userTable = {
     return getDb().prepare('SELECT id, email, name, role, created_at FROM users ORDER BY created_at ASC').all() as User[];
   },
 
-  create(email: string, name: string, password: string, role: 'admin' | 'event_manager'): User {
+  insert(email: string, name: string, password: string, role: 'admin' | 'event_manager'): User {
     const db = getDb();
     const password_hash = bcrypt.hashSync(password, 10);
     const result = db.prepare('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)').run(email, name, password_hash, role);

@@ -34,7 +34,7 @@ export async function POST(
   if (alreadyLiked) {
     likeTable.delete(id, session_id);
   } else {
-    likeTable.create(id, session_id);
+    likeTable.insert(id, session_id);
   }
 
   const count = likeTable.countByMediaId(id);

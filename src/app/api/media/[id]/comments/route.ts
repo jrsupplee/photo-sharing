@@ -26,6 +26,6 @@ export async function POST(
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  const comment = commentTable.create(id, author_name, commentBody, session_id || null);
+  const comment = commentTable.insert(id, author_name, commentBody, session_id || null);
   return NextResponse.json(comment, { status: 201 });
 }

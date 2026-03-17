@@ -27,7 +27,7 @@ export const commentTable = {
     return getDb().prepare('SELECT * FROM comments WHERE id = ?').get(id) as Comment | undefined;
   },
 
-  create(mediaId: number | string, authorName: string, body: string, sessionId: string | null): Comment {
+  insert(mediaId: number | string, authorName: string, body: string, sessionId: string | null): Comment {
     const db = getDb();
     const result = db.prepare('INSERT INTO comments (media_id, author_name, body, session_id) VALUES (?, ?, ?, ?)')
       .run(mediaId, authorName, body, sessionId);

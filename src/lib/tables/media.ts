@@ -124,7 +124,7 @@ export const mediaTable = {
     ).get(eventId, fileHash) as Media | undefined;
   },
 
-  create(fields: {
+  insert(fields: {
     event_id: number;
     album_id: number | null;
     filename: string;

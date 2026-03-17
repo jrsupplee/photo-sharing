@@ -24,6 +24,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
   }
 
-  const user = userTable.create(email, name, password, role);
+  const user = userTable.insert(email, name, password, role);
   return NextResponse.json(user, { status: 201 });
 }

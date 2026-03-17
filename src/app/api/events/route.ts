@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
   }
 
-  const event = eventTable.create(slug, name, date_start || null, date_end || null, albums || []);
+  const event = eventTable.insert(slug, name, date_start || null, date_end || null, albums || []);
   return NextResponse.json(event, { status: 201 });
 }
 

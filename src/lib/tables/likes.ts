@@ -22,7 +22,7 @@ export const likeTable = {
     return !!getDb().prepare('SELECT id FROM likes WHERE media_id = ? AND session_id = ?').get(mediaId, sessionId);
   },
 
-  create(mediaId: number | string, sessionId: string): void {
+  insert(mediaId: number | string, sessionId: string): void {
     getDb().prepare('INSERT INTO likes (media_id, session_id) VALUES (?, ?)').run(mediaId, sessionId);
   },
 
