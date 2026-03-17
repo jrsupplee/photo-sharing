@@ -45,7 +45,19 @@ export async function POST(
   const buffer = Buffer.from(await file.arrayBuffer());
   const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
 
-  if (mediaRepo.existsByHash(event.id, fileHash)) {
+  const existing = mediaRepo.findByHash(event.id, fileHash);
+  if (existing) {
+    if (!existing.deleted_at) {
+      return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
+    }
+    // Previously deleted — restore if the uploader is the one who deleted it
+    if (sessionId && existing.deleted_by === sessionId) {
+      mediaRepo.restore(existing.id, {
+        uploader_name: uploaderName || null,
+        caption: caption || null,
+      });
+      return NextResponse.json(mediaRepo.findById(existing.id), { status: 200 });
+    }
     return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
   }
 

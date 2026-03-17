@@ -89,11 +89,10 @@ export const mediaRepo = {
     `).get() as { n: number }).n;
   },
 
-  existsByHash(eventId: number | string, fileHash: string): boolean {
-    const row = getDb().prepare(
-      'SELECT 1 FROM media WHERE event_id = ? AND file_hash = ? AND deleted_at IS NULL LIMIT 1'
-    ).get(eventId, fileHash);
-    return row !== undefined;
+  findByHash(eventId: number | string, fileHash: string): Media | undefined {
+    return getDb().prepare(
+      'SELECT * FROM media WHERE event_id = ? AND file_hash = ? LIMIT 1'
+    ).get(eventId, fileHash) as Media | undefined;
   },
 
   create(fields: {
@@ -137,8 +136,13 @@ export const mediaRepo = {
     getDb().prepare(`UPDATE media SET deleted_at = datetime('now'), deleted_by = ? WHERE id = ?`).run(deletedBy, id);
   },
 
-  restore(id: number | string): void {
-    getDb().prepare('UPDATE media SET deleted_at = NULL WHERE id = ?').run(id);
+  restore(id: number | string, fields?: { uploader_name?: string | null; caption?: string | null }): void {
+    if (fields) {
+      getDb().prepare('UPDATE media SET deleted_at = NULL, deleted_by = NULL, uploader_name = ?, caption = ? WHERE id = ?')
+        .run(fields.uploader_name ?? null, fields.caption ?? null, id);
+    } else {
+      getDb().prepare('UPDATE media SET deleted_at = NULL, deleted_by = NULL WHERE id = ?').run(id);
+    }
   },
 
   delete(id: number | string): void {
