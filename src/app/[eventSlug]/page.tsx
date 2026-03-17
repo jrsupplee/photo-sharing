@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
+import { getSession } from '@/lib/getSession';
 import GalleryClient from './GalleryClient';
 
 interface Props {
@@ -29,6 +30,8 @@ export default async function EventPage({ params, searchParams }: Props) {
   const selectedAlbum = albumFilter ? albums.find(a => a.id === parseInt(albumFilter)) : null;
   const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, selectedAlbum?.id ?? null);
 
+  const session = await getSession();
+
   return (
     <GalleryClient
       event={event}
@@ -36,6 +39,7 @@ export default async function EventPage({ params, searchParams }: Props) {
       media={media}
       sessionId={sessionId}
       currentAlbumId={albumFilter ? parseInt(albumFilter) : null}
+      isAdmin={!!session}
     />
   );
 }

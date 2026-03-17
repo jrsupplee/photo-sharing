@@ -11,7 +11,7 @@ const authMiddleware = withAuth({
 
 export default function middleware(req: NextRequest) {
   // Admin routes: enforce auth
-  if (req.nextUrl.pathname.startsWith('/admin/dashboard') || req.nextUrl.pathname.startsWith('/admin/events')) {
+  if (req.nextUrl.pathname.startsWith('/admin/dashboard') || req.nextUrl.pathname.startsWith('/admin/events') || req.nextUrl.pathname.startsWith('/admin/users')) {
     return (authMiddleware as (req: NextRequest) => Response)(req);
   }
 
@@ -29,5 +29,5 @@ export default function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/dashboard/:path*', '/admin/events/:path*', '/((?!_next/static|_next/image|favicon.ico|api/).*)'],
+  matcher: ['/admin/dashboard/:path*', '/admin/events/:path*', '/admin/users/:path*', '/((?!_next/static|_next/image|favicon.ico|api/).*)'],
 };

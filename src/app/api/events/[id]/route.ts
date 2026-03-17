@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
 import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
 import { getStorage } from '@/lib/storage/factory';
+import { isAdmin, canManageEvent } from '@/lib/authorization';
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session) {
+  if (!isAdmin(session)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -32,11 +33,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session) {
+  const { id } = await params;
+
+  if (!canManageEvent(session, id)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
   const body = await req.json();
   const { name, date_start, date_end, albums } = body;
 

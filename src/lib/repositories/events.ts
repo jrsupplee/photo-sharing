@@ -18,6 +18,19 @@ export const eventRepo = {
     `).all() as (Event & { media_count: number; album_count: number })[];
   },
 
+  /** Event manager listing — only events they have permission for, with counts */
+  listWithCountsForUser(userId: number | string): (Event & { media_count: number; album_count: number })[] {
+    return getDb().prepare(`
+      SELECT e.*,
+        (SELECT COUNT(*) FROM media m WHERE m.event_id = e.id) as media_count,
+        (SELECT COUNT(*) FROM albums a WHERE a.event_id = e.id) as album_count
+      FROM events e
+      INNER JOIN event_permissions ep ON e.id = ep.event_id
+      WHERE ep.user_id = ?
+      ORDER BY e.created_at DESC
+    `).all(userId) as (Event & { media_count: number; album_count: number })[];
+  },
+
   /** Admin API listing ordered by creation date */
   listAll(): Event[] {
     return getDb().prepare('SELECT * FROM events ORDER BY created_at DESC').all() as Event[];

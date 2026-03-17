@@ -1,6 +1,9 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import type { NextAuthOptions } from 'next-auth';
+import bcrypt from 'bcryptjs';
+import getDb from './db';
+import { User } from '@/types';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,16 +14,16 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (!credentials?.email || !credentials?.password) return null;
 
-        if (
-          credentials?.email === adminEmail &&
-          credentials?.password === adminPassword
-        ) {
-          return { id: '1', email: adminEmail ?? '', name: 'Admin' };
-        }
-        return null;
+        const db = getDb();
+        const user = db.prepare('SELECT * FROM users WHERE email = ?').get(credentials.email) as
+          (User & { password_hash: string }) | undefined;
+
+        if (!user) return null;
+        if (!bcrypt.compareSync(credentials.password, user.password_hash)) return null;
+
+        return { id: String(user.id), email: user.email, name: user.name, role: user.role };
       },
     }),
   ],
@@ -34,12 +37,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = (user as User & { id: string }).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as { id?: string }).id = token.id as string;
+        session.user.id = token.id;
+        session.user.role = token.role;
       }
       return session;
     },

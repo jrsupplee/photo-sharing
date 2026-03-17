@@ -45,6 +45,14 @@ export interface Comment {
   created_at: string;
 }
 
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'event_manager';
+  created_at: string;
+}
+
 export interface Like {
   id: number;
   media_id: number;

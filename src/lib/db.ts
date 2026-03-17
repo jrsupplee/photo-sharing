@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 
 const dbPath = process.env.DATABASE_PATH || './data/wedding.db';
 const absoluteDbPath = path.resolve(process.cwd(), dbPath);
@@ -78,9 +79,26 @@ function initializeSchema() {
       UNIQUE(media_id, session_id),
       FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'event_manager',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS event_permissions (
+      user_id INTEGER NOT NULL,
+      event_id INTEGER NOT NULL,
+      PRIMARY KEY (user_id, event_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
   `);
 
-  // Migrations
+  // Migrations for media
   const cols = database.prepare(`PRAGMA table_info(media)`).all() as { name: string }[];
   const colNames = cols.map(c => c.name);
   if (!colNames.includes('thumbnail_key')) {
@@ -93,9 +111,18 @@ function initializeSchema() {
     database.exec(`ALTER TABLE media ADD COLUMN session_id TEXT`);
   }
 
+  // Migrations for comments
   const commentCols = database.prepare(`PRAGMA table_info(comments)`).all() as { name: string }[];
   if (!commentCols.map(c => c.name).includes('session_id')) {
     database.exec(`ALTER TABLE comments ADD COLUMN session_id TEXT`);
+  }
+
+  // Seed initial admin from env vars if no users exist
+  const userCount = (database.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n;
+  if (userCount === 0 && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
+    database.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, 'admin')`)
+      .run(process.env.ADMIN_EMAIL, 'Admin', hash);
   }
 }
 
