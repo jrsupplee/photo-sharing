@@ -2,8 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import type { NextAuthOptions } from 'next-auth';
 import bcrypt from 'bcryptjs';
-import getDb from './db';
-import { User } from '@/types';
+import { userRepo } from '@/lib/repositories';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,18 +11,23 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        session_id: { label: 'Session ID', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const db = getDb();
-        const user = db.prepare('SELECT * FROM users WHERE email = ?').get(credentials.email) as
-          (User & { password_hash: string }) | undefined;
-
+        const user = userRepo.findByEmail(credentials.email);
         if (!user) return null;
         if (!bcrypt.compareSync(credentials.password, user.password_hash)) return null;
 
-        return { id: String(user.id), email: user.email, name: user.name, role: user.role };
+        // Restore stored session_id, or persist the anonymous one from the login request
+        let sessionId = user.session_id;
+        if (!sessionId && credentials.session_id) {
+          sessionId = credentials.session_id;
+          userRepo.setSessionId(user.id, sessionId);
+        }
+
+        return { id: String(user.id), email: user.email, name: user.name, role: user.role, session_id: sessionId };
       },
     }),
   ],
@@ -37,7 +41,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as User & { id: string }).role;
+        token.role = (user as typeof user & { role: 'admin' | 'event_manager' }).role;
+        token.session_id = (user as typeof user & { session_id: string | null }).session_id;
       }
       return token;
     },
@@ -45,6 +50,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.session_id = token.session_id;
       }
       return session;
     },

@@ -8,6 +8,7 @@ declare module 'next-auth' {
       email: string;
       name: string;
       role: 'admin' | 'event_manager';
+      session_id: string | null;
     };
   }
 }
@@ -16,5 +17,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: 'admin' | 'event_manager';
+    session_id: string | null;
   }
 }

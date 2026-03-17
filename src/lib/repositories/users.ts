@@ -7,8 +7,12 @@ export const userRepo = {
     return getDb().prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id) as User | undefined;
   },
 
-  findByEmail(email: string): (User & { password_hash: string }) | undefined {
-    return getDb().prepare('SELECT * FROM users WHERE email = ?').get(email) as (User & { password_hash: string }) | undefined;
+  findByEmail(email: string): (User & { password_hash: string; session_id: string | null }) | undefined {
+    return getDb().prepare('SELECT * FROM users WHERE email = ?').get(email) as (User & { password_hash: string; session_id: string | null }) | undefined;
+  },
+
+  setSessionId(id: number | string, sessionId: string): void {
+    getDb().prepare('UPDATE users SET session_id = ? WHERE id = ?').run(sessionId, id);
   },
 
   list(): User[] {

@@ -19,6 +19,7 @@ export default function AdminLoginForm() {
     const result = await signIn('credentials', {
       email,
       password,
+      session_id: document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? '',
       redirect: false,
     });
 

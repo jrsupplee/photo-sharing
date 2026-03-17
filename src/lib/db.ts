@@ -117,6 +117,12 @@ function initializeSchema() {
     database.exec(`ALTER TABLE comments ADD COLUMN session_id TEXT`);
   }
 
+  // Migrations for users
+  const userCols = database.prepare(`PRAGMA table_info(users)`).all() as { name: string }[];
+  if (!userCols.map(c => c.name).includes('session_id')) {
+    database.exec(`ALTER TABLE users ADD COLUMN session_id TEXT`);
+  }
+
   // Seed initial admin from env vars if no users exist
   const userCount = (database.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n;
   if (userCount === 0 && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
