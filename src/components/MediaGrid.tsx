@@ -22,7 +22,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
+  const [likedIds, setLikedIds] = useState<Set<number>>(() => new Set(media.filter(m => m.user_liked).map(m => m.id)));
   const [likeCounts, setLikeCounts] = useState<Record<number, number>>(() =>
     Object.fromEntries(media.map(m => [m.id, m.like_count || 0]))
   );

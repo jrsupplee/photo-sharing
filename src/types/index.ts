@@ -33,6 +33,7 @@ export interface Media {
   album_name?: string;
   like_count?: number;
   comment_count?: number;
+  user_liked?: number;
 }
 
 export interface Comment {

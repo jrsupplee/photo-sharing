@@ -21,28 +21,6 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   const albums = db.prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(event.id) as Album[];
 
-  let mediaQuery = `
-    SELECT m.*, a.name as album_name,
-      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id) as like_count,
-      (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count
-    FROM media m
-    LEFT JOIN albums a ON m.album_id = a.id
-    WHERE m.event_id = ?
-  `;
-
-  let mediaParams: (string | number)[] = [event.id];
-
-  if (albumFilter) {
-    const selectedAlbum = albums.find(a => a.id === parseInt(albumFilter));
-    if (selectedAlbum) {
-      mediaQuery += ' AND m.album_id = ?';
-      mediaParams = [event.id, selectedAlbum.id];
-    }
-  }
-
-  mediaQuery += ' ORDER BY m.created_at DESC';
-  const media = db.prepare(mediaQuery).all(...mediaParams) as Media[];
-
   // Get or create session ID for likes
   const cookieStore = await cookies();
   let sessionId = cookieStore.get('session_id')?.value;
@@ -50,11 +28,34 @@ export default async function EventPage({ params, searchParams }: Props) {
     sessionId = uuidv4();
   }
 
+  let mediaQuery = `
+    SELECT m.*, a.name as album_name,
+      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id) as like_count,
+      (SELECT COUNT(*) FROM comments c WHERE c.media_id = m.id) as comment_count,
+      (SELECT COUNT(*) FROM likes l WHERE l.media_id = m.id AND l.session_id = ?) as user_liked
+    FROM media m
+    LEFT JOIN albums a ON m.album_id = a.id
+    WHERE m.event_id = ?
+  `;
+
+  let mediaParams: (string | number)[] = [sessionId, event.id];
+
+  if (albumFilter) {
+    const selectedAlbum = albums.find(a => a.id === parseInt(albumFilter));
+    if (selectedAlbum) {
+      mediaQuery += ' AND m.album_id = ?';
+      mediaParams = [sessionId, event.id, selectedAlbum.id];
+    }
+  }
+
+  mediaQuery += ' ORDER BY m.created_at DESC';
+  const mediaWithLikes = db.prepare(mediaQuery).all(...mediaParams) as Media[];
+
   return (
     <GalleryClient
       event={event}
       albums={albums}
-      media={media}
+      media={mediaWithLikes}
       sessionId={sessionId}
       currentAlbumId={albumFilter ? parseInt(albumFilter) : null}
     />
