@@ -1,5 +1,18 @@
+import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { User } from '@/types';
+
+export function createTable(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS event_permissions (
+      user_id INTEGER NOT NULL,
+      event_id INTEGER NOT NULL,
+      PRIMARY KEY (user_id, event_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
+  `);
+}
 
 export const eventPermissionRepo = {
   /** Event IDs a user can manage */

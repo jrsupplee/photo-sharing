@@ -23,7 +23,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 ### Data layer
 
 - **SQLite via `better-sqlite3`** — synchronous DB at `DATABASE_PATH` (default `./data/wedding.db`).
-- `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs `initSchema()` from `src/lib/repositories/schema.ts`, which creates all tables and applies column migrations. **All schema and migration SQL lives in `schema.ts`** — not in `db.ts` or individual repo files. This separation exists to avoid a circular import: repo files import `getDb` from `db.ts`, so `db.ts` must not import from the repos barrel.
+- `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs each repository's `createTable(db)` function in dependency order, which creates the table and applies any column migrations. **Each repo file owns its own schema and migrations via an exported `createTable(db)` function** that accepts the `Database` instance as a parameter (no `getDb()` call inside, avoiding circular import issues). `db.ts` imports these directly from the individual repo files — not from the barrel — which is safe because `createTable` functions don't call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(db)` exported from `src/lib/repositories/users.ts`.
 - Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
