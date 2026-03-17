@@ -7,8 +7,6 @@ import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/plugins/captions.css';
-import Counter from 'yet-another-react-lightbox/plugins/counter';
-import 'yet-another-react-lightbox/plugins/counter.css';
 import Video from 'yet-another-react-lightbox/plugins/video';
 import { Media } from '@/types';
 import { Comment } from '@/types';
@@ -120,12 +118,10 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
   };
 
   const slides = mediaItems.map(item => {
-    const title = item.uploader_name ? `Uploaded by: ${item.uploader_name}` : '';
     if (item.mime_type?.startsWith('video/')) {
       return {
         type: 'video' as const,
         sources: [{ src: `/api/files/${item.storage_key}`, type: item.mime_type }],
-        title,
         description: item.caption || '',
         width: 1280,
         height: 720,
@@ -133,7 +129,6 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
     }
     return {
       src: `/api/files/${item.medium_key ?? item.storage_key}`,
-      title,
       description: item.caption || '',
       width: 1200,
       height: 900,
@@ -229,7 +224,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
         close={() => { setLightboxOpen(false); setShowComments(false); setShowEdit(false); }}
         slides={slides}
         on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setShowEdit(false); setComments([]); } }}
-        plugins={[Captions, Counter, Video]}
+        plugins={[Captions, Video]}
         captions={{ showToggle: true, descriptionTextAlign: 'center' }}
         styles={{
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
@@ -240,8 +235,16 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
           controls: () => {
             if (!currentMedia) return null;
             const canEdit = currentMedia.session_id === sessionId;
+            const topBar = (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)', pointerEvents: 'none' }}>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
+                  {currentIndex + 1} / {mediaItems.length}
+                  {currentMedia.album_name && <> · {currentMedia.album_name}</>}
+                </span>
+              </div>
+            );
             if (showEdit) return (
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                   <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Edit Photo</span>
                   <button onClick={() => setShowEdit(false)} style={{ color: 'rgba(255,255,255,0.4)', padding: '0.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -273,10 +276,10 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                     {savingEdit ? 'Saving…' : 'Save'}
                   </button>
                 </form>
-              </div>
+              </div></>
             );
             if (showComments) return (
-              <div
+              <>{topBar}<div
                 style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, maxHeight: '60vh', paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -324,15 +327,10 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                     {submittingComment ? 'Posting…' : 'Post Comment'}
                   </button>
                 </form>
-              </div>
+              </div></>
             );
             return (
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-                {currentMedia.album_name && (
-                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                    {currentMedia.album_name}
-                  </span>
-                )}
+              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
                 <button
                   onClick={() => handleLike(currentMedia.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: likedIds.has(currentMedia.id) ? '#fb7185' : 'rgba(255,255,255,0.7)' }}
@@ -372,7 +370,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
                     </button>
                   </>
                 )}
-              </div>
+              </div></>
             );
           }
         }}

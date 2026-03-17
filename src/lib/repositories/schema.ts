@@ -80,6 +80,7 @@ export function initSchema(db: Database.Database): void {
   if (!mediaCols.includes('session_id'))    db.exec('ALTER TABLE media ADD COLUMN session_id TEXT');
   if (!mediaCols.includes('deleted_at'))    db.exec('ALTER TABLE media ADD COLUMN deleted_at TEXT');
   if (!mediaCols.includes('deleted_by'))    db.exec('ALTER TABLE media ADD COLUMN deleted_by TEXT');
+  if (!mediaCols.includes('file_hash'))     db.exec('ALTER TABLE media ADD COLUMN file_hash TEXT');
 
   // Migrations — comments
   const commentCols = (db.prepare('PRAGMA table_info(comments)').all() as { name: string }[]).map(c => c.name);

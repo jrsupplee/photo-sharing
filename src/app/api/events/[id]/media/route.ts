@@ -4,6 +4,7 @@ import { generateImageVariants } from '@/lib/imageVariants';
 import { getStorage } from '@/lib/storage/factory';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import crypto from 'crypto';
 
 export async function GET(
   _req: NextRequest,
@@ -42,6 +43,12 @@ export async function POST(
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+  if (mediaRepo.existsByHash(event.id, fileHash)) {
+    return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
+  }
+
   const ext = path.extname(file.name) || '';
   const uuid = uuidv4();
   const filename = `${slug}/${uuid}${ext}`;
@@ -65,6 +72,7 @@ export async function POST(
     storage_key: storageKey,
     thumbnail_key: variants?.thumbnailKey ?? null,
     medium_key: variants?.mediumKey ?? null,
+    file_hash: fileHash,
   });
 
   return NextResponse.json(media, { status: 201 });

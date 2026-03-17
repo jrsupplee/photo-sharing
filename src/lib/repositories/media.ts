@@ -89,6 +89,13 @@ export const mediaRepo = {
     `).get() as { n: number }).n;
   },
 
+  existsByHash(eventId: number | string, fileHash: string): boolean {
+    const row = getDb().prepare(
+      'SELECT 1 FROM media WHERE event_id = ? AND file_hash = ? AND deleted_at IS NULL LIMIT 1'
+    ).get(eventId, fileHash);
+    return row !== undefined;
+  },
+
   create(fields: {
     event_id: number;
     album_id: number | null;
@@ -102,15 +109,16 @@ export const mediaRepo = {
     storage_key: string;
     thumbnail_key: string | null;
     medium_key: string | null;
+    file_hash: string | null;
   }): Media {
     const db = getDb();
     const result = db.prepare(`
-      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key, file_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       fields.event_id, fields.album_id, fields.filename, fields.original_name,
       fields.mime_type, fields.size, fields.caption, fields.uploader_name,
-      fields.session_id, fields.storage_key, fields.thumbnail_key, fields.medium_key,
+      fields.session_id, fields.storage_key, fields.thumbnail_key, fields.medium_key, fields.file_hash,
     );
     return db.prepare('SELECT * FROM media WHERE id = ?').get(result.lastInsertRowid) as Media;
   },

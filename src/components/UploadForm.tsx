@@ -29,7 +29,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
-  const [results, setResults] = useState<{ success: number; failed: number } | null>(null);
+  const [results, setResults] = useState<{ success: number; failed: number; duplicate: number } | null>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const pasteZoneRef = useRef<HTMLDivElement>(null);
   const PASTE_PLACEHOLDER = 'Tap here, then long-press and choose Paste';
@@ -98,6 +98,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
     setProgress(0);
     let success = 0;
     let failed = 0;
+    let duplicate = 0;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -114,6 +115,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
           body: formData,
         });
         if (res.ok) success++;
+        else if (res.status === 409) duplicate++;
         else failed++;
       } catch {
         failed++;
@@ -123,7 +125,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
     }
 
     setUploading(false);
-    setResults({ success, failed });
+    setResults({ success, failed, duplicate });
     setFiles([]);
     setCaption('');
     if (onUploadComplete) onUploadComplete();
@@ -140,6 +142,7 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
         <h3 className="font-cormorant text-2xl text-stone-700">Thank You!</h3>
         <p className="text-stone-500 font-light">
           {results.success} photo{results.success !== 1 ? 's' : ''} shared successfully
+          {results.duplicate > 0 && `, ${results.duplicate} already uploaded`}
           {results.failed > 0 && `, ${results.failed} failed`}
         </p>
         <button
