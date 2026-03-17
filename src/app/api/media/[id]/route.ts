@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { mediaRepo } from '@/lib/repositories';
+import { mediaTable } from '@/lib/tables';
 import { canManageEvent } from '@/lib/authorization';
 
 export async function PATCH(
@@ -11,7 +11,7 @@ export async function PATCH(
   const body = await req.json();
   const { uploader_name, caption, session_id } = body;
 
-  const media = mediaRepo.findById(id);
+  const media = mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
@@ -21,7 +21,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const updated = mediaRepo.update(id, uploader_name || null, caption || null);
+  const updated = mediaTable.update(id, uploader_name || null, caption || null);
   return NextResponse.json(updated);
 }
 
@@ -32,7 +32,7 @@ export async function DELETE(
   const session = await getSession();
   const { id } = await params;
 
-  const media = mediaRepo.findById(id);
+  const media = mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
@@ -45,6 +45,6 @@ export async function DELETE(
   }
 
   const deletedBy = session?.user?.session_id ?? sessionId ?? null;
-  mediaRepo.softDelete(id, deletedBy);
+  mediaTable.softDelete(id, deletedBy);
   return NextResponse.json({ success: true });
 }

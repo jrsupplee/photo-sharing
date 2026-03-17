@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mediaRepo, commentRepo } from '@/lib/repositories';
+import { mediaTable, commentTable } from '@/lib/tables';
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  return NextResponse.json(commentRepo.findByMediaId(id));
+  return NextResponse.json(commentTable.findByMediaId(id));
 }
 
 export async function POST(
@@ -21,11 +21,11 @@ export async function POST(
     return NextResponse.json({ error: 'Author name and body are required' }, { status: 400 });
   }
 
-  const media = mediaRepo.findById(id);
+  const media = mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  const comment = commentRepo.create(id, author_name, commentBody, session_id || null);
+  const comment = commentTable.create(id, author_name, commentBody, session_id || null);
   return NextResponse.json(comment, { status: 201 });
 }

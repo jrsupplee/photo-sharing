@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventRepo, mediaRepo } from '@/lib/repositories';
+import { eventTable, mediaTable } from '@/lib/tables';
 import { generateImageVariants } from '@/lib/imageVariants';
 import { getStorage } from '@/lib/storage/factory';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,12 +12,12 @@ export async function GET(
 ) {
   const { id: slug } = await params;
 
-  const event = eventRepo.findBySlug(slug);
+  const event = eventTable.findBySlug(slug);
   if (!event) {
     return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   }
 
-  return NextResponse.json(mediaRepo.findByEventSlug(slug));
+  return NextResponse.json(mediaTable.findByEventSlug(slug));
 }
 
 export async function POST(
@@ -26,7 +26,7 @@ export async function POST(
 ) {
   const { id: slug } = await params;
 
-  const event = eventRepo.findBySlug(slug);
+  const event = eventTable.findBySlug(slug);
   if (!event) {
     return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   }
@@ -45,18 +45,18 @@ export async function POST(
   const buffer = Buffer.from(await file.arrayBuffer());
   const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
 
-  const existing = mediaRepo.findByHash(event.id, fileHash);
+  const existing = mediaTable.findByHash(event.id, fileHash);
   if (existing) {
     if (!existing.deleted_at) {
       return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
     }
     // Previously deleted — restore if the uploader is the one who deleted it
     if (sessionId && existing.deleted_by === sessionId) {
-      mediaRepo.restore(existing.id, {
+      mediaTable.restore(existing.id, {
         uploader_name: uploaderName || null,
         caption: caption || null,
       });
-      return NextResponse.json(mediaRepo.findById(existing.id), { status: 200 });
+      return NextResponse.json(mediaTable.findById(existing.id), { status: 200 });
     }
     return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
   }
@@ -71,7 +71,7 @@ export async function POST(
     generateImageVariants(buffer, filename, file.type),
   ]);
 
-  const media = mediaRepo.create({
+  const media = mediaTable.create({
     event_id: event.id,
     album_id: albumId ? parseInt(albumId) : null,
     filename,

@@ -30,7 +30,7 @@ export function createTable(db: Database.Database): void {
   if (!cols.includes('file_hash'))     db.exec('ALTER TABLE media ADD COLUMN file_hash TEXT');
 }
 
-export const mediaRepo = {
+export const mediaTable = {
   findById(id: number | string): Media | undefined {
     return getDb().prepare('SELECT * FROM media WHERE id = ?').get(id) as Media | undefined;
   },

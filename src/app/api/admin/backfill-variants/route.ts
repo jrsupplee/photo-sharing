@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { mediaRepo } from '@/lib/repositories';
+import { mediaTable } from '@/lib/tables';
 import { generateImageVariants } from '@/lib/imageVariants';
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +12,7 @@ export async function POST() {
   }
 
   const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
-  const missing = mediaRepo.findMissingVariants();
+  const missing = mediaTable.findMissingVariants();
 
   let processed = 0;
   let failed = 0;
@@ -31,7 +31,7 @@ export async function POST() {
       const variants = await generateImageVariants(buffer, item.storage_key, item.mime_type);
 
       if (variants) {
-        mediaRepo.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey);
+        mediaTable.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey);
         processed++;
       }
     } catch (err) {
@@ -50,7 +50,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    total: mediaRepo.countImages(),
-    missing: mediaRepo.countMissingVariants(),
+    total: mediaTable.countImages(),
+    missing: mediaTable.countMissingVariants(),
   });
 }

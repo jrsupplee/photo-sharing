@@ -13,7 +13,7 @@ export function createTable(db: Database.Database): void {
   `);
 }
 
-export const likeRepo = {
+export const likeTable = {
   countByMediaId(mediaId: number | string): number {
     return (getDb().prepare('SELECT COUNT(*) as count FROM likes WHERE media_id = ?').get(mediaId) as { count: number }).count;
   },

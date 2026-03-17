@@ -18,12 +18,12 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Database access rule
 
-**All database queries must go through the repository objects in `src/lib/repositories/`.** Direct use of `getDb()` or `db.prepare()` outside of `src/lib/repositories/` and `src/lib/db.ts` itself is not permitted. Import from the barrel at `@/lib/repositories`.
+**All database queries must go through the table objects in `src/lib/tables/`.** Direct use of `getDb()` or `db.prepare()` outside of `src/lib/tables/` and `src/lib/db.ts` itself is not permitted. Import from the barrel at `@/lib/tables`.
 
 ### Data layer
 
 - **SQLite via `better-sqlite3`** — synchronous DB at `DATABASE_PATH` (default `./data/wedding.db`).
-- `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs each repository's `createTable(db)` function in dependency order, which creates the table and applies any column migrations. **Each repo file owns its own schema and migrations via an exported `createTable(db)` function** that accepts the `Database` instance as a parameter (no `getDb()` call inside, avoiding circular import issues). `db.ts` imports these directly from the individual repo files — not from the barrel — which is safe because `createTable` functions don't call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(db)` exported from `src/lib/repositories/users.ts`.
+- `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs each table's `createTable(db)` function in dependency order, which creates the table and applies any column migrations. **Each table file owns its own schema and migrations via an exported `createTable(db)` function** that accepts the `Database` instance as a parameter (no `getDb()` call inside, avoiding circular import issues). `db.ts` imports these directly from the individual table files — not from the barrel — which is safe because `createTable` functions don't call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(db)` exported from `src/lib/tables/users.ts`.
 - Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
@@ -36,7 +36,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Auth and roles
 
-- **NextAuth v4**, credentials provider, JWT strategy. Configured in `src/lib/auth.ts`, which uses `userRepo` (not `getDb` directly).
+- **NextAuth v4**, credentials provider, JWT strategy. Configured in `src/lib/auth.ts`, which uses `userTable` (not `getDb` directly).
 - Two roles: `admin` (full access) and `event_manager` (access to permitted events via `event_permissions` table). Authorization helpers are in `src/lib/authorization.ts` (`isAdmin`, `canManageEvent`).
 - Protected admin routes are enforced in `src/proxy.ts` via `getToken` from `next-auth/jwt`. `src/proxy.ts` is used instead of `middleware.ts` in this setup.
 

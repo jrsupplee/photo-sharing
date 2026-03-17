@@ -1,13 +1,13 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { createTable as createEventsTable } from './repositories/events';
-import { createTable as createAlbumsTable } from './repositories/albums';
-import { createTable as createUsersTable, seedAdminIfNeeded } from './repositories/users';
-import { createTable as createMediaTable } from './repositories/media';
-import { createTable as createCommentsTable } from './repositories/comments';
-import { createTable as createLikesTable } from './repositories/likes';
-import { createTable as createEventPermissionsTable } from './repositories/event-permissions';
+import { createTable as createEventsTable } from './tables/events';
+import { createTable as createAlbumsTable } from './tables/albums';
+import { createTable as createUsersTable, seedAdminIfNeeded } from './tables/users';
+import { createTable as createMediaTable } from './tables/media';
+import { createTable as createCommentsTable } from './tables/comments';
+import { createTable as createLikesTable } from './tables/likes';
+import { createTable as createEventPermissionsTable } from './tables/event-permissions';
 
 const dbPath = process.env.DATABASE_PATH || './data/wedding.db';
 const absoluteDbPath = path.resolve(process.cwd(), dbPath);

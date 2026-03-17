@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { eventRepo } from '@/lib/repositories';
+import { eventTable } from '@/lib/tables';
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -15,11 +15,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
   }
 
-  if (eventRepo.slugExists(slug)) {
+  if (eventTable.slugExists(slug)) {
     return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
   }
 
-  const event = eventRepo.create(slug, name, date_start || null, date_end || null, albums || []);
+  const event = eventTable.create(slug, name, date_start || null, date_end || null, albums || []);
   return NextResponse.json(event, { status: 201 });
 }
 
@@ -29,5 +29,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.json(eventRepo.listAll());
+  return NextResponse.json(eventTable.listAll());
 }

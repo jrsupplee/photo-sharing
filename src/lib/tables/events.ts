@@ -17,7 +17,7 @@ export function createTable(db: Database.Database): void {
   if (!cols.includes('default_album_id')) db.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
 }
 
-export const eventRepo = {
+export const eventTable = {
   /** Public listing ordered by event date */
   listByDate(): Event[] {
     return getDb().prepare('SELECT * FROM events ORDER BY date_start ASC').all() as Event[];

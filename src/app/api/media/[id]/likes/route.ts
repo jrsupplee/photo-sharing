@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mediaRepo, likeRepo } from '@/lib/repositories';
+import { mediaTable, likeTable } from '@/lib/tables';
 
 export async function GET(
   req: NextRequest,
@@ -8,8 +8,8 @@ export async function GET(
   const { id } = await params;
   const sessionId = req.nextUrl.searchParams.get('session_id');
 
-  const count = likeRepo.countByMediaId(id);
-  const liked = sessionId ? likeRepo.exists(id, sessionId) : false;
+  const count = likeTable.countByMediaId(id);
+  const liked = sessionId ? likeTable.exists(id, sessionId) : false;
   return NextResponse.json({ count, liked });
 }
 
@@ -25,18 +25,18 @@ export async function POST(
     return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
   }
 
-  const media = mediaRepo.findById(id);
+  const media = mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  const alreadyLiked = likeRepo.exists(id, session_id);
+  const alreadyLiked = likeTable.exists(id, session_id);
   if (alreadyLiked) {
-    likeRepo.delete(id, session_id);
+    likeTable.delete(id, session_id);
   } else {
-    likeRepo.create(id, session_id);
+    likeTable.create(id, session_id);
   }
 
-  const count = likeRepo.countByMediaId(id);
+  const count = likeTable.countByMediaId(id);
   return NextResponse.json({ count, liked: !alreadyLiked });
 }

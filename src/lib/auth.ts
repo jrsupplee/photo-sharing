@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import type { NextAuthOptions } from 'next-auth';
 import bcrypt from 'bcryptjs';
-import { userRepo } from '@/lib/repositories';
+import { userTable } from '@/lib/tables';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = userRepo.findByEmail(credentials.email);
+        const user = userTable.findByEmail(credentials.email);
         if (!user) return null;
         if (!bcrypt.compareSync(credentials.password, user.password_hash)) return null;
 
@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         let sessionId = user.session_id;
         if (!sessionId && credentials.session_id) {
           sessionId = credentials.session_id;
-          userRepo.setSessionId(user.id, sessionId);
+          userTable.setSessionId(user.id, sessionId);
         }
 
         return { id: String(user.id), email: user.email, name: user.name, role: user.role, session_id: sessionId };

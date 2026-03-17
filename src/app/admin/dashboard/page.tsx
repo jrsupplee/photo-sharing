@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import { eventRepo } from '@/lib/repositories';
+import { eventTable } from '@/lib/tables';
 import { isAdmin } from '@/lib/authorization';
 import SignOutButton from '../SignOutButton';
 import BackfillVariants from './BackfillVariants';
@@ -12,8 +12,8 @@ export default async function DashboardPage() {
 
   const admin = isAdmin(session);
   const events = admin
-    ? eventRepo.listWithCounts()
-    : eventRepo.listWithCountsForUser(session.user.id);
+    ? eventTable.listWithCounts()
+    : eventTable.listWithCountsForUser(session.user.id);
 
   return (
     <div className="min-h-screen bg-cream">

@@ -27,7 +27,7 @@ export function seedAdminIfNeeded(db: Database.Database): void {
   }
 }
 
-export const userRepo = {
+export const userTable = {
   findById(id: number | string): User | undefined {
     return getDb().prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id) as User | undefined;
   },

@@ -1,0 +1,7 @@
+export { eventTable } from './events';
+export { albumTable } from './albums';
+export { mediaTable } from './media';
+export { likeTable } from './likes';
+export { commentTable } from './comments';
+export { userTable } from './users';
+export { eventPermissionTable } from './event-permissions';

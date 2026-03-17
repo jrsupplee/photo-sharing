@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { eventRepo, mediaRepo } from '@/lib/repositories';
+import { eventTable, mediaTable } from '@/lib/tables';
 import { canManageEvent } from '@/lib/authorization';
 import archiver from 'archiver';
 import { PassThrough } from 'stream';
@@ -13,7 +13,7 @@ export async function GET(
   const session = await getSession();
   const { id: slug } = await params;
 
-  const event = eventRepo.findBySlug(slug);
+  const event = eventTable.findBySlug(slug);
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
   if (!canManageEvent(session, event.id)) {
@@ -23,7 +23,7 @@ export async function GET(
   const albumIdParam = req.nextUrl.searchParams.get('album_id');
   const albumId = albumIdParam ? parseInt(albumIdParam) : null;
 
-  let media = mediaRepo.findByEventId(event.id);
+  let media = mediaTable.findByEventId(event.id);
   if (albumId) {
     media = media.filter(m => m.album_id === albumId);
   }

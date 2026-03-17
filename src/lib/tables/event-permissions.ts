@@ -14,7 +14,7 @@ export function createTable(db: Database.Database): void {
   `);
 }
 
-export const eventPermissionRepo = {
+export const eventPermissionTable = {
   /** Event IDs a user can manage */
   getEventIdsForUser(userId: number | string): number[] {
     return (getDb().prepare('SELECT event_id FROM event_permissions WHERE user_id = ?').all(userId) as { event_id: number }[])

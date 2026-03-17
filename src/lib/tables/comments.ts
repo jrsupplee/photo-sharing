@@ -18,7 +18,7 @@ export function createTable(db: Database.Database): void {
   if (!cols.includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
 }
 
-export const commentRepo = {
+export const commentTable = {
   findByMediaId(mediaId: number | string): Comment[] {
     return getDb().prepare('SELECT * FROM comments WHERE media_id = ? ORDER BY created_at ASC').all(mediaId) as Comment[];
   },

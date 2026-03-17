@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import { eventRepo, albumRepo } from '@/lib/repositories';
+import { eventTable, albumTable } from '@/lib/tables';
 import EventManageClient from './EventManageClient';
 
 interface Props {
@@ -14,10 +14,10 @@ export default async function ManageEventPage({ params }: Props) {
 
   const { id } = await params;
 
-  const event = eventRepo.findById(id);
+  const event = eventTable.findById(id);
   if (!event) notFound();
 
-  const albums = albumRepo.findByEventId(event.id);
+  const albums = albumTable.findByEventId(event.id);
   const isAdmin = session.user.role === 'admin';
 
   return (

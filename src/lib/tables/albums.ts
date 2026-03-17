@@ -14,7 +14,7 @@ export function createTable(db: Database.Database): void {
   `);
 }
 
-export const albumRepo = {
+export const albumTable = {
   findByEventId(eventId: number | string): Album[] {
     return getDb().prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(eventId) as Album[];
   },

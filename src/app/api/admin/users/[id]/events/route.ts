@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { eventPermissionRepo } from '@/lib/repositories';
+import { eventPermissionTable } from '@/lib/tables';
 import { isAdmin } from '@/lib/authorization';
 
 export async function GET(
@@ -11,7 +11,7 @@ export async function GET(
   if (!isAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const event_ids = eventPermissionRepo.getEventIdsForUser(id);
+  const event_ids = eventPermissionTable.getEventIdsForUser(id);
   return NextResponse.json({ event_ids });
 }
 
@@ -29,6 +29,6 @@ export async function PUT(
     return NextResponse.json({ error: 'event_ids must be an array' }, { status: 400 });
   }
 
-  eventPermissionRepo.setForUser(id, event_ids);
+  eventPermissionTable.setForUser(id, event_ids);
   return NextResponse.json({ success: true });
 }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import { userRepo, eventRepo } from '@/lib/repositories';
+import { userTable, eventTable } from '@/lib/tables';
 import { isAdmin } from '@/lib/authorization';
 import UsersClient from './UsersClient';
 
@@ -10,8 +10,8 @@ export default async function UsersPage() {
   if (!session) redirect('/admin');
   if (!isAdmin(session)) redirect('/admin/dashboard');
 
-  const users = userRepo.list();
-  const events = eventRepo.listAll();
+  const users = userTable.list();
+  const events = eventTable.listAll();
 
   return (
     <div className="min-h-screen bg-cream">

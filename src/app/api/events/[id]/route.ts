@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
+import { eventTable, albumTable, mediaTable } from '@/lib/tables';
 import { getStorage } from '@/lib/storage/factory';
 import { isAdmin, canManageEvent } from '@/lib/authorization';
 
@@ -16,7 +16,7 @@ export async function DELETE(
   const { id } = await params;
   const storage = getStorage();
 
-  for (const key of mediaRepo.getStorageKeysByEventId(id)) {
+  for (const key of mediaTable.getStorageKeysByEventId(id)) {
     try {
       await storage.delete(key);
     } catch {
@@ -24,7 +24,7 @@ export async function DELETE(
     }
   }
 
-  eventRepo.delete(id);
+  eventTable.delete(id);
   return NextResponse.json({ success: true });
 }
 
@@ -42,18 +42,18 @@ export async function PUT(
   const body = await req.json();
   const { name, date_start, date_end, albums, default_album_name } = body;
 
-  const event = eventRepo.update(id, name, date_start || null, date_end || null);
+  const event = eventTable.update(id, name, date_start || null, date_end || null);
 
   if (albums && Array.isArray(albums)) {
-    albumRepo.replaceForEvent(id, albums);
+    albumTable.replaceForEvent(id, albums);
   }
 
   // Resolve default album by name after replacement (IDs change on every replace)
-  const newAlbums = albumRepo.findByEventId(id);
+  const newAlbums = albumTable.findByEventId(id);
   const defaultAlbum = default_album_name
     ? newAlbums.find(a => a.name === default_album_name) ?? null
     : null;
-  eventRepo.setDefaultAlbum(id, defaultAlbum?.id ?? null);
+  eventTable.setDefaultAlbum(id, defaultAlbum?.id ?? null);
 
   return NextResponse.json(event);
 }

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/getSession';
-import { userRepo } from '@/lib/repositories';
+import { userTable } from '@/lib/tables';
 import { isAdmin } from '@/lib/authorization';
 
 export async function GET() {
   const session = await getSession();
   if (!isAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json(userRepo.list());
+  return NextResponse.json(userTable.list());
 }
 
 export async function POST(req: NextRequest) {
@@ -20,10 +20,10 @@ export async function POST(req: NextRequest) {
   if (role !== 'admin' && role !== 'event_manager') {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
   }
-  if (userRepo.findByEmail(email)) {
+  if (userTable.findByEmail(email)) {
     return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
   }
 
-  const user = userRepo.create(email, name, password, role);
+  const user = userTable.create(email, name, password, role);
   return NextResponse.json(user, { status: 201 });
 }

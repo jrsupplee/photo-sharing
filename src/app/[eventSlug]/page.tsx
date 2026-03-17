@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import { eventRepo, albumRepo, mediaRepo } from '@/lib/repositories';
+import { eventTable, albumTable, mediaTable } from '@/lib/tables';
 import { getSession } from '@/lib/getSession';
 import GalleryClient from './GalleryClient';
 
@@ -12,10 +12,10 @@ interface Props {
 export default async function EventPage({ params }: Props) {
   const { eventSlug } = await params;
 
-  const event = eventRepo.findBySlug(eventSlug);
+  const event = eventTable.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = albumRepo.findByEventId(event.id);
+  const albums = albumTable.findByEventId(event.id);
 
   // Get or create session ID for likes
   const cookieStore = await cookies();
@@ -24,10 +24,10 @@ export default async function EventPage({ params }: Props) {
     sessionId = uuidv4();
   }
 
-  const media = mediaRepo.findByEventIdForGallery(event.id, sessionId, null);
+  const media = mediaTable.findByEventIdForGallery(event.id, sessionId, null);
 
   const session = await getSession();
-  const deletedMedia = session ? mediaRepo.findDeletedByEventId(event.id) : [];
+  const deletedMedia = session ? mediaTable.findDeletedByEventId(event.id) : [];
 
   return (
     <GalleryClient
@@ -44,7 +44,7 @@ export default async function EventPage({ params }: Props) {
 export async function generateMetadata({ params }: Props) {
   const { eventSlug } = await params;
   try {
-    const event = eventRepo.findBySlug(eventSlug);
+    const event = eventTable.findBySlug(eventSlug);
     if (event) {
       return { title: `${event.name} — Wedding Memories` };
     }
