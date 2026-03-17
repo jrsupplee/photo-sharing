@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event, Album } from '@/types';
+import Link from 'next/link';
 
 interface Props {
   event: Event;
@@ -23,7 +24,8 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'delete'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'download' | 'delete'>('general');
+  const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
 
   const addAlbum = () => setAlbums(prev => [...prev, '']);
   const updateAlbum = (i: number, v: string) => {
@@ -125,6 +127,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       <div className="flex border-b border-stone-200 mb-8">
         <button onClick={() => setActiveTab('general')} className={tabClass('general')}>General</button>
         <button onClick={() => setActiveTab('albums')} className={tabClass('albums')}>Albums</button>
+        <button onClick={() => setActiveTab('download')} className={tabClass('download')}>Download</button>
         {isAdmin && (
           <button onClick={() => setActiveTab('delete')} className={tabClass('delete')}>Delete</button>
         )}
@@ -237,6 +240,38 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
 
             <SaveBar />
           </form>
+        </div>
+      )}
+
+      {activeTab === 'download' && (
+        <div className="max-w-lg">
+          <div className="bg-white rounded-xl border border-stone-100 p-6 space-y-5">
+            <div>
+              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Album</label>
+              <select
+                value={downloadAlbumId}
+                onChange={e => setDownloadAlbumId(e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm bg-white"
+              >
+                <option value="">All photos</option>
+                {initialAlbums.map(album => (
+                  <option key={album.id} value={album.id}>{album.name}</option>
+                ))}
+              </select>
+              {!downloadAlbumId && (
+                <p className="text-xs text-stone-400 mt-1 font-light">All photos will be organized into album folders</p>
+              )}
+            </div>
+            <Link
+              href={`/api/events/${event.slug}/download${downloadAlbumId ? `?album_id=${downloadAlbumId}` : ''}`}
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-stone-800 text-white text-sm tracking-wider hover:bg-stone-700 transition-colors rounded-lg"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download ZIP
+            </Link>
+          </div>
         </div>
       )}
 
