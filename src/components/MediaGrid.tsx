@@ -14,9 +14,10 @@ import { Comment } from '@/types';
 interface MediaGridProps {
   media: Media[];
   sessionId: string;
+  isAdmin?: boolean;
 }
 
-export default function MediaGrid({ media, sessionId }: MediaGridProps) {
+export default function MediaGrid({ media, sessionId, isAdmin }: MediaGridProps) {
   const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -234,7 +235,7 @@ export default function MediaGrid({ media, sessionId }: MediaGridProps) {
         render={{
           controls: () => {
             if (!currentMedia) return null;
-            const canEdit = currentMedia.session_id === sessionId;
+            const canEdit = isAdmin || currentMedia.session_id === sessionId;
             const topBar = (
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)', pointerEvents: 'none' }}>
                 <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', letterSpacing: '0.05em' }}>

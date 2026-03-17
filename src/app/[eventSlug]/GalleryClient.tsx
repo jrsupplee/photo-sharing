@@ -192,7 +192,7 @@ export default function GalleryClient({
                 Share
               </Link>
             </div>
-            <MediaGrid media={displayedMedia} sessionId={sessionId} />
+            <MediaGrid media={displayedMedia} sessionId={sessionId} isAdmin={isAdmin} />
           </>
         )}
       </main>
