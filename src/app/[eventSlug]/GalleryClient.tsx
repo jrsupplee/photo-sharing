@@ -24,6 +24,7 @@ export default function GalleryClient({
 }: GalleryClientProps) {
   const [allMedia, setAllMedia] = useState<Media[]>(media);
   const [activeAlbum, setActiveAlbum] = useState<number | null>(null);
+  const [activeUploader, setActiveUploader] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedItems, setDeletedItems] = useState<Media[]>(initialDeletedMedia);
 
@@ -43,7 +44,15 @@ export default function GalleryClient({
     setShowDeleted(false);
   };
 
-  const displayedMedia = activeAlbum ? allMedia.filter(m => m.album_id === activeAlbum) : allMedia;
+  const uploaderNames = Array.from(
+    new Set(allMedia.map(m => m.uploader_name).filter((n): n is string => !!n))
+  ).sort();
+
+  const displayedMedia = allMedia.filter(m => {
+    if (activeAlbum && m.album_id !== activeAlbum) return false;
+    if (activeUploader && m.uploader_name !== activeUploader) return false;
+    return true;
+  });
 
   const albumCounts = allMedia.reduce<Record<number, number>>((acc, m) => {
     if (m.album_id) acc[m.album_id] = (acc[m.album_id] || 0) + 1;
@@ -180,9 +189,23 @@ export default function GalleryClient({
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <p className="text-stone-400 text-sm font-light">
-                {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-stone-400 text-sm font-light">
+                  {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
+                </p>
+                {uploaderNames.length >= 2 && (
+                  <select
+                    value={activeUploader ?? ''}
+                    onChange={e => setActiveUploader(e.target.value || null)}
+                    className="text-sm font-light text-stone-500 bg-transparent border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-stone-400 cursor-pointer"
+                  >
+                    <option value="">All uploaders</option>
+                    {uploaderNames.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <Link
                 href={`/${event.slug}/upload`}
                 className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white text-xs tracking-widest uppercase hover:bg-stone-700 transition-colors rounded-lg sm:hidden"

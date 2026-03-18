@@ -283,12 +283,12 @@ export const mediaTable = {
     );
   },
 
-  async restore(id: number | string, fields?: { uploader_name?: string | null; caption?: string | null }): Promise<void> {
+  async restore(id: number | string, fields?: { uploader_name?: string | null; caption?: string | null; album_id?: number | null; session_id?: string | null }): Promise<void> {
     const db = await getDb();
     if (fields) {
       await db.execute(
-        'UPDATE media SET deleted_at = NULL, deleted_by = NULL, uploader_name = ?, caption = ? WHERE id = ?',
-        [fields.uploader_name ?? null, fields.caption ?? null, id],
+        'UPDATE media SET deleted_at = NULL, deleted_by = NULL, uploader_name = ?, caption = ?, album_id = ?, session_id = ? WHERE id = ?',
+        [fields.uploader_name ?? null, fields.caption ?? null, fields.album_id ?? null, fields.session_id ?? null, id],
       );
     } else {
       await db.execute('UPDATE media SET deleted_at = NULL, deleted_by = NULL WHERE id = ?', [id]);

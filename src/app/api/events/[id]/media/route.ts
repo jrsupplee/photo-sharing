@@ -50,15 +50,14 @@ export async function POST(
     if (!existing.deleted_at) {
       return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
     }
-    // Previously deleted — restore if the uploader is the one who deleted it
-    if (sessionId && existing.deleted_by === sessionId) {
-      await mediaTable.restore(existing.id, {
-        uploader_name: uploaderName || null,
-        caption: caption || null,
-      });
-      return NextResponse.json(await mediaTable.findById(existing.id), { status: 200 });
-    }
-    return NextResponse.json({ error: 'This photo has already been uploaded to this event.' }, { status: 409 });
+    // Previously deleted — restore it with the new metadata
+    await mediaTable.restore(existing.id, {
+      uploader_name: uploaderName || null,
+      caption: caption || null,
+      album_id: albumId ? parseInt(albumId) : null,
+      session_id: sessionId || null,
+    });
+    return NextResponse.json(await mediaTable.findById(existing.id), { status: 200 });
   }
 
   const ext = path.extname(file.name) || '';
