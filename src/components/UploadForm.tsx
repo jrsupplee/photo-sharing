@@ -23,12 +23,15 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setUploaderName(saved);
   }, []);
-  const [albumId, setAlbumId] = useState<string>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(ALBUM_STORAGE_KEY) : null;
-    if (saved && albums.some(a => String(a.id) === saved)) return saved;
-    if (defaultAlbumId != null && albums.some(a => a.id === defaultAlbumId)) return String(defaultAlbumId);
-    return '';
-  });
+  const [albumId, setAlbumId] = useState<string>(() =>
+    defaultAlbumId != null && albums.some(a => a.id === defaultAlbumId)
+      ? String(defaultAlbumId)
+      : ''
+  );
+  useEffect(() => {
+    const saved = localStorage.getItem(ALBUM_STORAGE_KEY);
+    if (saved && albums.some(a => String(a.id) === saved)) setAlbumId(saved);
+  }, []);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
