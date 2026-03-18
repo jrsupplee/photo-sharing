@@ -298,16 +298,27 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
         />
       </div>
 
-      {/* Progress */}
+      {/* Progress dialog */}
       {uploading && (
-        <div className="space-y-2">
-          <div className="h-1 bg-stone-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-stone-400 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl px-8 py-8 mx-6 flex flex-col items-center gap-4 max-w-xs w-full">
+            <svg className="w-10 h-10 text-stone-400 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <p className="text-stone-700 text-sm font-light text-center leading-relaxed">
+              Please do not switch to another app while media is uploading.
+            </p>
+            <div className="w-full space-y-1">
+              <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-stone-500 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-stone-400 text-xs text-center">{progress}%</p>
+            </div>
           </div>
-          <p className="text-stone-400 text-xs text-center">{progress}% uploaded</p>
         </div>
       )}
 
