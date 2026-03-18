@@ -48,13 +48,15 @@ export default function GalleryClient({
     new Set(allMedia.map(m => m.uploader_name).filter((n): n is string => !!n))
   ).sort();
 
-  const displayedMedia = allMedia.filter(m => {
-    if (activeAlbum && m.album_id !== activeAlbum) return false;
-    if (activeUploader && m.uploader_name !== activeUploader) return false;
-    return true;
-  });
+  const uploaderFilteredMedia = activeUploader
+    ? allMedia.filter(m => m.uploader_name === activeUploader)
+    : allMedia;
 
-  const albumCounts = allMedia.reduce<Record<number, number>>((acc, m) => {
+  const displayedMedia = activeAlbum
+    ? uploaderFilteredMedia.filter(m => m.album_id === activeAlbum)
+    : uploaderFilteredMedia;
+
+  const albumCounts = uploaderFilteredMedia.reduce<Record<number, number>>((acc, m) => {
     if (m.album_id) acc[m.album_id] = (acc[m.album_id] || 0) + 1;
     return acc;
   }, {});
@@ -193,7 +195,7 @@ export default function GalleryClient({
                 <p className="text-stone-400 text-sm font-light">
                   {displayedMedia.length} {displayedMedia.length === 1 ? 'memory' : 'memories'}
                 </p>
-                {uploaderNames.length >= 2 && (
+                {uploaderNames.length >= 1 && (
                   <select
                     value={activeUploader ?? ''}
                     onChange={e => setActiveUploader(e.target.value || null)}
