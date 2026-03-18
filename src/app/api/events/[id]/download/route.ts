@@ -13,17 +13,17 @@ export async function GET(
   const session = await getSession();
   const { id: slug } = await params;
 
-  const event = eventTable.findBySlug(slug);
+  const event = await eventTable.findBySlug(slug);
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
-  if (!canManageEvent(session, event.id)) {
+  if (!await canManageEvent(session, event.id)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
   const albumIdParam = req.nextUrl.searchParams.get('album_id');
   const albumId = albumIdParam ? parseInt(albumIdParam) : null;
 
-  let media = mediaTable.findByEventId(event.id);
+  let media = await mediaTable.findByEventId(event.id);
   if (albumId) {
     media = media.filter(m => m.album_id === albumId);
   }

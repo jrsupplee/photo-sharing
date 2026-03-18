@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { eventTable } from '@/lib/tables';
 import { Event } from '@/types';
 
-export default function Home() {
+export default async function Home() {
   let events: Event[] = [];
   try {
-    events = eventTable.listByDate();
+    events = await eventTable.listByDate();
   } catch {
     // DB not yet initialized
   }

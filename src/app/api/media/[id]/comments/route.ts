@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  return NextResponse.json(commentTable.findByMediaId(id));
+  return NextResponse.json(await commentTable.findByMediaId(id));
 }
 
 export async function POST(
@@ -21,11 +21,11 @@ export async function POST(
     return NextResponse.json({ error: 'Author name and body are required' }, { status: 400 });
   }
 
-  const media = mediaTable.findById(id);
+  const media = await mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  const comment = commentTable.insert(id, author_name, commentBody, session_id || null);
+  const comment = await commentTable.insert(id, author_name, commentBody, session_id || null);
   return NextResponse.json(comment, { status: 201 });
 }

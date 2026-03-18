@@ -10,8 +10,8 @@ export default async function UsersPage() {
   if (!session) redirect('/admin');
   if (!isAdmin(session)) redirect('/admin/dashboard');
 
-  const users = userTable.list();
-  const events = eventTable.listAll();
+  const users = await userTable.list();
+  const events = await eventTable.listAll();
 
   return (
     <div className="min-h-screen bg-cream">

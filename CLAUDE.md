@@ -22,8 +22,11 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Data layer
 
-- **SQLite via `better-sqlite3`** — synchronous DB at `DATABASE_PATH` (default `./data/wedding.db`).
-- `getDb()` in `src/lib/db.ts` manages the connection. On first call it runs each table's `createTable(db)` function in dependency order, which creates the table and applies any column migrations. **Each table file owns its own schema and migrations via an exported `createTable(db)` function** that accepts the `Database` instance as a parameter (no `getDb()` call inside, avoiding circular import issues). `db.ts` imports these directly from the individual table files — not from the barrel — which is safe because `createTable` functions don't call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(db)` exported from `src/lib/tables/users.ts`.
+- **SQLite** (default) or **MySQL** — selected via `DB_BACKEND` env var (`sqlite` | `mysql`).
+- SQLite uses `better-sqlite3` at `DATABASE_PATH` (default `./data/wedding.db`). MySQL uses `mysql2/promise` with a connection pool configured by `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- `getDb()` in `src/lib/db/index.ts` returns a `Promise<DbAdapter>` singleton. On first call it creates the right adapter, runs each table's `create(adapter)` function in dependency order (creates table + applies column migrations), then calls `seedAdminIfNeeded(adapter)`.
+- The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite (`src/lib/db/sqlite-adapter.ts`) wraps `better-sqlite3` synchronously; MySQL (`src/lib/db/mysql-adapter.ts`) wraps `mysql2/promise` with pool + per-connection transaction support.
+- **All table methods are async** and return Promises. `db/index.ts` imports table files directly (not from the barrel) to avoid circular imports — `create()` functions accept an adapter param and do not call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(adapter)` exported from `src/lib/tables/users.ts`.
 - Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
@@ -55,7 +58,13 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 | Var | Default | Purpose |
 |-----|---------|---------|
+| `DB_BACKEND` | `sqlite` | Database backend: `sqlite` or `mysql` |
 | `DATABASE_PATH` | `./data/wedding.db` | SQLite file location |
+| `DB_HOST` | `localhost` | MySQL host |
+| `DB_PORT` | `3306` | MySQL port |
+| `DB_USER` | — | MySQL username |
+| `DB_PASSWORD` | — | MySQL password |
+| `DB_NAME` | — | MySQL database name |
 | `UPLOAD_DIR` | `./uploads` | Disk storage root |
 | `STORAGE_BACKEND` | `disk` | Storage backend selector |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Seeded on first run if no users exist |

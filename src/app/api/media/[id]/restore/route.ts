@@ -10,15 +10,15 @@ export async function POST(
   const session = await getSession();
   const { id } = await params;
 
-  const media = mediaTable.findById(id);
+  const media = await mediaTable.findById(id);
   if (!media) {
     return NextResponse.json({ error: 'Media not found' }, { status: 404 });
   }
 
-  if (!canManageEvent(session, media.event_id)) {
+  if (!await canManageEvent(session, media.event_id)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  mediaTable.restore(id);
+  await mediaTable.restore(id);
   return NextResponse.json({ success: true });
 }

@@ -1,79 +1,94 @@
-import type Database from "better-sqlite3";
-import getDb from "@/lib/db";
-import { User } from "./users";
+import type { DbAdapter } from '@/lib/db/adapter';
+import getDb from '@/lib/db';
+import type { User } from './users';
 
 export const eventPermissionTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS event_permissions (
-        user_id INTEGER NOT NULL,
-        event_id INTEGER NOT NULL,
-        PRIMARY KEY (user_id, event_id),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-      );
-    `);
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS event_permissions (
+          user_id INT NOT NULL,
+          event_id INT NOT NULL,
+          PRIMARY KEY (user_id, event_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS event_permissions (
+          user_id INTEGER NOT NULL,
+          event_id INTEGER NOT NULL,
+          PRIMARY KEY (user_id, event_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )
+      `);
+    }
   },
 
-  insertOrIgnore(
-    userId: number | string,
-    eventId: number | string,
-  ): number | bigint {
-    return getDb()
-      .prepare(
-        "INSERT OR IGNORE INTO event_permissions (user_id, event_id) VALUES (?, ?)",
-      )
-      .run(userId, eventId).lastInsertRowid;
+  async insertOrIgnore(userId: number | string, eventId: number | string): Promise<number | bigint> {
+    const db = await getDb();
+    const sql = db.dialect === 'mysql'
+      ? 'INSERT IGNORE INTO event_permissions (user_id, event_id) VALUES (?, ?)'
+      : 'INSERT OR IGNORE INTO event_permissions (user_id, event_id) VALUES (?, ?)';
+    const result = await db.execute(sql, [userId, eventId]);
+    return result.lastInsertId;
   },
 
   /** Event IDs a user can manage */
-  getEventIdsForUser(userId: number | string): number[] {
-    return (
-      getDb()
-        .prepare("SELECT event_id FROM event_permissions WHERE user_id = ?")
-        .all(userId) as { event_id: number }[]
-    ).map((r) => r.event_id);
+  async getEventIdsForUser(userId: number | string): Promise<number[]> {
+    const db = await getDb();
+    return (await db.query<{ event_id: number }>(
+      'SELECT event_id FROM event_permissions WHERE user_id = ?',
+      [userId],
+    )).map(r => r.event_id);
   },
 
   /** Users who can manage a given event */
-  getUsersForEvent(eventId: number | string): User[] {
-    return getDb()
-      .prepare(
-        `
+  async getUsersForEvent(eventId: number | string): Promise<User[]> {
+    const db = await getDb();
+    return db.query<User>(`
       SELECT u.id, u.email, u.name, u.role, u.created_at
       FROM users u
       INNER JOIN event_permissions ep ON u.id = ep.user_id
       WHERE ep.event_id = ?
-    `,
-      )
-      .all(eventId) as User[];
+    `, [eventId]);
   },
 
-  hasPermission(userId: number | string, eventId: number | string): boolean {
-    return !!getDb()
-      .prepare(
-        "SELECT 1 FROM event_permissions WHERE user_id = ? AND event_id = ?",
-      )
-      .get(userId, eventId);
+  async hasPermission(userId: number | string, eventId: number | string): Promise<boolean> {
+    const db = await getDb();
+    return !!(await db.queryOne(
+      'SELECT 1 FROM event_permissions WHERE user_id = ? AND event_id = ?',
+      [userId, eventId],
+    ));
   },
 
   /** Replace all event permissions for a user */
-  setForUser(userId: number | string, eventIds: number[]): void {
-    const db = getDb();
-    db.transaction(() => {
-      db.prepare("DELETE FROM event_permissions WHERE user_id = ?").run(userId);
-      for (const eventId of eventIds) this.insertOrIgnore(userId, eventId);
-    })();
+  async setForUser(userId: number | string, eventIds: number[]): Promise<void> {
+    const db = await getDb();
+    const insertSql = db.dialect === 'mysql'
+      ? 'INSERT IGNORE INTO event_permissions (user_id, event_id) VALUES (?, ?)'
+      : 'INSERT OR IGNORE INTO event_permissions (user_id, event_id) VALUES (?, ?)';
+    await db.transaction(async tx => {
+      await tx.execute('DELETE FROM event_permissions WHERE user_id = ?', [userId]);
+      for (const eventId of eventIds) {
+        await tx.execute(insertSql, [userId, eventId]);
+      }
+    });
   },
 
   /** Replace all user permissions for an event */
-  setForEvent(eventId: number | string, userIds: number[]): void {
-    const db = getDb();
-    db.transaction(() => {
-      db.prepare("DELETE FROM event_permissions WHERE event_id = ?").run(
-        eventId,
-      );
-      for (const userId of userIds) this.insertOrIgnore(userId, eventId);
-    })();
+  async setForEvent(eventId: number | string, userIds: number[]): Promise<void> {
+    const db = await getDb();
+    const insertSql = db.dialect === 'mysql'
+      ? 'INSERT IGNORE INTO event_permissions (event_id, user_id) VALUES (?, ?)'
+      : 'INSERT OR IGNORE INTO event_permissions (event_id, user_id) VALUES (?, ?)';
+    await db.transaction(async tx => {
+      await tx.execute('DELETE FROM event_permissions WHERE event_id = ?', [eventId]);
+      for (const userId of userIds) {
+        await tx.execute(insertSql, [eventId, userId]);
+      }
+    });
   },
 };

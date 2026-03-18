@@ -14,10 +14,10 @@ export default async function ManageEventPage({ params }: Props) {
 
   const { id } = await params;
 
-  const event = eventTable.findById(id);
+  const event = await eventTable.findById(id);
   if (!event) notFound();
 
-  const albums = albumTable.findByEventId(event.id);
+  const albums = await albumTable.findByEventId(event.id);
   const isAdmin = session.user.role === 'admin';
 
   return (

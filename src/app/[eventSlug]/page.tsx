@@ -12,10 +12,10 @@ interface Props {
 export default async function EventPage({ params }: Props) {
   const { eventSlug } = await params;
 
-  const event = eventTable.findBySlug(eventSlug);
+  const event = await eventTable.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = albumTable.findByEventId(event.id);
+  const albums = await albumTable.findByEventId(event.id);
 
   // Get or create session ID for likes
   const cookieStore = await cookies();
@@ -24,10 +24,10 @@ export default async function EventPage({ params }: Props) {
     sessionId = uuidv4();
   }
 
-  const media = mediaTable.findByEventIdForGallery(event.id, sessionId, null);
+  const media = await mediaTable.findByEventIdForGallery(event.id, sessionId, null);
 
   const session = await getSession();
-  const deletedMedia = session ? mediaTable.findDeletedByEventId(event.id) : [];
+  const deletedMedia = session ? await mediaTable.findDeletedByEventId(event.id) : [];
 
   return (
     <GalleryClient
@@ -44,7 +44,7 @@ export default async function EventPage({ params }: Props) {
 export async function generateMetadata({ params }: Props) {
   const { eventSlug } = await params;
   try {
-    const event = eventTable.findBySlug(eventSlug);
+    const event = await eventTable.findBySlug(eventSlug);
     if (event) {
       return { title: `${event.name} — Wedding Memories` };
     }

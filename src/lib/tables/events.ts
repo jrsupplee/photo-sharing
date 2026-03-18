@@ -1,6 +1,6 @@
-import type Database from "better-sqlite3";
-import getDb from "@/lib/db";
-import { albumTable } from "./albums";
+import type { DbAdapter } from '@/lib/db/adapter';
+import getDb from '@/lib/db';
+import type { Album } from './albums';
 
 export interface Event {
   id: number;
@@ -13,53 +13,57 @@ export interface Event {
 }
 
 export const eventTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL,
-        date_start TEXT,
-        date_end TEXT,
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-    `);
-    const cols = (
-      db.prepare("PRAGMA table_info(events)").all() as { name: string }[]
-    ).map((c) => c.name);
-    if (!cols.includes("default_album_id"))
-      db.exec("ALTER TABLE events ADD COLUMN default_album_id INTEGER");
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS events (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          date_start VARCHAR(20),
+          date_end VARCHAR(20),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      if (!(await adapter.columnExists('events', 'default_album_id'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INT');
+      }
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          date_start TEXT,
+          date_end TEXT,
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+      if (!(await adapter.columnExists('events', 'default_album_id'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
+      }
+    }
   },
 
-  /** Public listing ordered by event date */
-  listByDate(): Event[] {
-    return getDb()
-      .prepare("SELECT * FROM events ORDER BY date_start ASC")
-      .all() as Event[];
+  async listByDate(): Promise<Event[]> {
+    const db = await getDb();
+    return db.query<Event>('SELECT * FROM events ORDER BY date_start ASC');
   },
 
-  /** Admin listing with media/album counts, ordered by creation date */
-  listWithCounts(): (Event & { media_count: number; album_count: number })[] {
-    return getDb()
-      .prepare(
-        `
+  async listWithCounts(): Promise<(Event & { media_count: number; album_count: number })[]> {
+    const db = await getDb();
+    return db.query<Event & { media_count: number; album_count: number }>(`
       SELECT e.*,
         (SELECT COUNT(*) FROM media m WHERE m.event_id = e.id) as media_count,
         (SELECT COUNT(*) FROM albums a WHERE a.event_id = e.id) as album_count
       FROM events e
       ORDER BY e.created_at DESC
-    `,
-      )
-      .all() as (Event & { media_count: number; album_count: number })[];
+    `);
   },
 
-  /** Event manager listing — only events they have permission for, with counts */
-  listWithCountsForUser(
-    userId: number | string,
-  ): (Event & { media_count: number; album_count: number })[] {
-    return getDb()
-      .prepare(
-        `
+  async listWithCountsForUser(userId: number | string): Promise<(Event & { media_count: number; album_count: number })[]> {
+    const db = await getDb();
+    return db.query<Event & { media_count: number; album_count: number }>(`
       SELECT e.*,
         (SELECT COUNT(*) FROM media m WHERE m.event_id = e.id) as media_count,
         (SELECT COUNT(*) FROM albums a WHERE a.event_id = e.id) as album_count
@@ -67,85 +71,80 @@ export const eventTable = {
       INNER JOIN event_permissions ep ON e.id = ep.event_id
       WHERE ep.user_id = ?
       ORDER BY e.created_at DESC
-    `,
-      )
-      .all(userId) as (Event & { media_count: number; album_count: number })[];
+    `, [userId]);
   },
 
-  /** Admin API listing ordered by creation date */
-  listAll(): Event[] {
-    return getDb()
-      .prepare("SELECT * FROM events ORDER BY created_at DESC")
-      .all() as Event[];
+  async listAll(): Promise<Event[]> {
+    const db = await getDb();
+    return db.query<Event>('SELECT * FROM events ORDER BY created_at DESC');
   },
 
-  findById(id: number | string): Event | undefined {
-    return getDb().prepare("SELECT * FROM events WHERE id = ?").get(id) as
-      | Event
-      | undefined;
+  async findById(id: number | string): Promise<Event | undefined> {
+    const db = await getDb();
+    return db.queryOne<Event>('SELECT * FROM events WHERE id = ?', [id]);
   },
 
-  findBySlug(slug: string): Event | undefined {
-    return getDb().prepare("SELECT * FROM events WHERE slug = ?").get(slug) as
-      | Event
-      | undefined;
+  async findBySlug(slug: string): Promise<Event | undefined> {
+    const db = await getDb();
+    return db.queryOne<Event>('SELECT * FROM events WHERE slug = ?', [slug]);
   },
 
-  slugExists(slug: string): boolean {
-    return !!getDb().prepare("SELECT id FROM events WHERE slug = ?").get(slug);
+  async slugExists(slug: string): Promise<boolean> {
+    const db = await getDb();
+    return !!(await db.queryOne('SELECT id FROM events WHERE slug = ?', [slug]));
   },
 
-  insert(
+  async insert(
     slug: string,
     name: string,
     dateStart: string | null,
     dateEnd: string | null,
     albums: string[],
-  ): Event {
-    const db = getDb();
-    const insertEvent = db.prepare(
-      "INSERT INTO events (slug, name, date_start, date_end) VALUES (?, ?, ?, ?)",
-    );
-
-    const eventId = db.transaction(() => {
-      const result = insertEvent.run(slug, name, dateStart, dateEnd);
-      const id = result.lastInsertRowid;
-      albums.forEach((albumName, index) => {
-        if (albumName.trim())
-          albumTable.insert({
-            eventId: Number(id),
-            name: albumName.trim(),
-            order: index,
-          });
-      });
-      return id;
-    })();
-
-    return db
-      .prepare("SELECT * FROM events WHERE id = ?")
-      .get(eventId) as Event;
+  ): Promise<Event> {
+    const db = await getDb();
+    const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
+    const eventId = await db.transaction(async tx => {
+      const res = await tx.execute(
+        'INSERT INTO events (slug, name, date_start, date_end) VALUES (?, ?, ?, ?)',
+        [slug, name, dateStart, dateEnd],
+      );
+      for (const [index, albumName] of albums.entries()) {
+        if (albumName.trim()) {
+          await tx.execute(
+            `INSERT INTO albums (event_id, name, ${orderCol}) VALUES (?, ?, ?)`,
+            [Number(res.lastInsertId), albumName.trim(), index],
+          );
+        }
+      }
+      return res.lastInsertId;
+    });
+    return (await db.queryOne<Event>('SELECT * FROM events WHERE id = ?', [eventId]))!;
   },
 
-  update(
+  async update(
     id: number | string,
     name: string,
     dateStart: string | null,
     dateEnd: string | null,
-  ): Event {
-    const db = getDb();
-    db.prepare(
-      "UPDATE events SET name = ?, date_start = ?, date_end = ? WHERE id = ?",
-    ).run(name, dateStart, dateEnd, id);
-    return db.prepare("SELECT * FROM events WHERE id = ?").get(id) as Event;
+  ): Promise<Event> {
+    const db = await getDb();
+    await db.execute(
+      'UPDATE events SET name = ?, date_start = ?, date_end = ? WHERE id = ?',
+      [name, dateStart, dateEnd, id],
+    );
+    return (await db.queryOne<Event>('SELECT * FROM events WHERE id = ?', [id]))!;
   },
 
-  setDefaultAlbum(id: number | string, albumId: number | null): void {
-    getDb()
-      .prepare("UPDATE events SET default_album_id = ? WHERE id = ?")
-      .run(albumId, id);
+  async setDefaultAlbum(id: number | string, albumId: number | null): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE events SET default_album_id = ? WHERE id = ?', [albumId, id]);
   },
 
-  delete(id: number | string): void {
-    getDb().prepare("DELETE FROM events WHERE id = ?").run(id);
+  async delete(id: number | string): Promise<void> {
+    const db = await getDb();
+    await db.execute('DELETE FROM events WHERE id = ?', [id]);
   },
 };
+
+// Re-export Album for consumers that imported it from here previously
+export type { Album };

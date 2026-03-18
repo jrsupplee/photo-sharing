@@ -10,10 +10,10 @@ interface Props {
 export default async function UploadPage({ params }: Props) {
   const { eventSlug } = await params;
 
-  const event = eventTable.findBySlug(eventSlug);
+  const event = await eventTable.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = albumTable.findByEventId(event.id);
+  const albums = await albumTable.findByEventId(event.id);
 
   return (
     <div className="min-h-screen bg-cream">

@@ -1,5 +1,5 @@
-import type Database from "better-sqlite3";
-import getDb from "@/lib/db";
+import type { DbAdapter } from '@/lib/db/adapter';
+import getDb from '@/lib/db';
 
 export interface Album {
   id: number;
@@ -9,72 +9,87 @@ export interface Album {
 }
 
 export const albumTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS albums (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        "order" INTEGER DEFAULT 0,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-      );
-    `);
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS albums (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          event_id INT NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          \`order\` INT DEFAULT 0,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS albums (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          "order" INTEGER DEFAULT 0,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )
+      `);
+    }
   },
 
-  insert(album: {
-    eventId: string | number;
-    name: string;
-    order: number;
-  }): bigint | number {
-    const result = getDb()
-      .prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)')
-      .run(album.eventId, album.name, album.order);
-
-    return result.lastInsertRowid;
+  async insert(album: { eventId: string | number; name: string; order: number }): Promise<number | bigint> {
+    const db = await getDb();
+    const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
+    const result = await db.execute(
+      `INSERT INTO albums (event_id, name, ${orderCol}) VALUES (?, ?, ?)`,
+      [album.eventId, album.name, album.order],
+    );
+    return result.lastInsertId;
   },
 
-  update(album: { id: string | number; name: string; order: number }): void {
-    getDb()
-      .prepare('UPDATE albums SET name = ?, "order" = ? WHERE id = ?')
-      .run(album.name, album.order, album.id);
+  async update(album: { id: string | number; name: string; order: number }): Promise<void> {
+    const db = await getDb();
+    const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
+    await db.execute(
+      `UPDATE albums SET name = ?, ${orderCol} = ? WHERE id = ?`,
+      [album.name, album.order, album.id],
+    );
   },
 
-  findByEventId(eventId: number | string): Album[] {
-    return getDb()
-      .prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC')
-      .all(eventId) as Album[];
+  async findByEventId(eventId: number | string): Promise<Album[]> {
+    const db = await getDb();
+    const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
+    return db.query<Album>(
+      `SELECT * FROM albums WHERE event_id = ? ORDER BY ${orderCol} ASC`,
+      [eventId],
+    );
   },
 
-  /** Update albums for an event: update existing (by id), insert new (id=0), delete removed */
-  updateForEvent(
+  async updateForEvent(
     eventId: number | string,
     albums: { id: number; name: string; order: number }[],
-  ): void {
-    const db = getDb();
-    const existingIds = new Set(
-      (
-        db.prepare("SELECT id FROM albums WHERE event_id = ?").all(eventId) as {
-          id: number;
-        }[]
-      ).map((r) => r.id),
-    );
-    const incomingIds = new Set(
-      albums.filter((a) => a.id > 0).map((a) => a.id),
-    );
+  ): Promise<void> {
+    const db = await getDb();
+    const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
+    const existing = await db.query<{ id: number }>('SELECT id FROM albums WHERE event_id = ?', [eventId]);
+    const existingIds = new Set(existing.map(r => r.id));
+    const incomingIds = new Set(albums.filter(a => a.id > 0).map(a => a.id));
 
-    db.transaction(() => {
+    await db.transaction(async tx => {
       for (const existingId of existingIds) {
         if (!incomingIds.has(existingId)) {
-          db.prepare("DELETE FROM albums WHERE id = ?").run(existingId);
+          await tx.execute('DELETE FROM albums WHERE id = ?', [existingId]);
         }
       }
       for (const album of albums) {
         if (album.id > 0 && existingIds.has(album.id)) {
-          this.update(album);
+          await tx.execute(
+            `UPDATE albums SET name = ?, ${orderCol} = ? WHERE id = ?`,
+            [album.name, album.order, album.id],
+          );
         } else {
-          this.insert({ eventId, ...album });
+          await tx.execute(
+            `INSERT INTO albums (event_id, name, ${orderCol}) VALUES (?, ?, ?)`,
+            [eventId, album.name, album.order],
+          );
         }
       }
-    })();
+    });
   },
 };

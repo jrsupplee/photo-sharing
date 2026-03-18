@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { DbAdapter } from '@/lib/db/adapter';
 import getDb from '@/lib/db';
 
 export interface Comment {
@@ -11,34 +11,61 @@ export interface Comment {
 }
 
 export const commentTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        media_id INTEGER NOT NULL,
-        author_name TEXT NOT NULL,
-        body TEXT NOT NULL,
-        session_id TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
-      );
-    `);
-    const cols = (db.prepare('PRAGMA table_info(comments)').all() as { name: string }[]).map(c => c.name);
-    if (!cols.includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          media_id INT NOT NULL,
+          author_name VARCHAR(255) NOT NULL,
+          body TEXT NOT NULL,
+          session_id VARCHAR(255),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          media_id INTEGER NOT NULL,
+          author_name TEXT NOT NULL,
+          body TEXT NOT NULL,
+          session_id TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        )
+      `);
+      if (!(await adapter.columnExists('comments', 'session_id'))) {
+        await adapter.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
+      }
+    }
   },
 
-  findByMediaId(mediaId: number | string): Comment[] {
-    return getDb().prepare('SELECT * FROM comments WHERE media_id = ? ORDER BY created_at ASC').all(mediaId) as Comment[];
+  async findByMediaId(mediaId: number | string): Promise<Comment[]> {
+    const db = await getDb();
+    return db.query<Comment>(
+      'SELECT * FROM comments WHERE media_id = ? ORDER BY created_at ASC',
+      [mediaId],
+    );
   },
 
-  findById(id: number | bigint): Comment | undefined {
-    return getDb().prepare('SELECT * FROM comments WHERE id = ?').get(id) as Comment | undefined;
+  async findById(id: number | bigint): Promise<Comment | undefined> {
+    const db = await getDb();
+    return db.queryOne<Comment>('SELECT * FROM comments WHERE id = ?', [id]);
   },
 
-  insert(mediaId: number | string, authorName: string, body: string, sessionId: string | null): Comment {
-    const db = getDb();
-    const result = db.prepare('INSERT INTO comments (media_id, author_name, body, session_id) VALUES (?, ?, ?, ?)')
-      .run(mediaId, authorName, body, sessionId);
-    return db.prepare('SELECT * FROM comments WHERE id = ?').get(result.lastInsertRowid) as Comment;
+  async insert(
+    mediaId: number | string,
+    authorName: string,
+    body: string,
+    sessionId: string | null,
+  ): Promise<Comment> {
+    const db = await getDb();
+    const result = await db.execute(
+      'INSERT INTO comments (media_id, author_name, body, session_id) VALUES (?, ?, ?, ?)',
+      [mediaId, authorName, body, sessionId],
+    );
+    return (await db.queryOne<Comment>('SELECT * FROM comments WHERE id = ?', [result.lastInsertId]))!;
   },
 };

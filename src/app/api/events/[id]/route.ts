@@ -16,7 +16,7 @@ export async function DELETE(
   const { id } = await params;
   const storage = getStorage();
 
-  for (const key of mediaTable.getStorageKeysByEventId(id)) {
+  for (const key of await mediaTable.getStorageKeysByEventId(id)) {
     try {
       await storage.delete(key);
     } catch {
@@ -24,7 +24,7 @@ export async function DELETE(
     }
   }
 
-  eventTable.delete(id);
+  await eventTable.delete(id);
   return NextResponse.json({ success: true });
 }
 
@@ -35,24 +35,24 @@ export async function PUT(
   const session = await getSession();
   const { id } = await params;
 
-  if (!canManageEvent(session, id)) {
+  if (!await canManageEvent(session, id)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await req.json();
   const { name, date_start, date_end, albums, default_album_name } = body;
 
-  const event = eventTable.update(id, name, date_start || null, date_end || null);
+  const event = await eventTable.update(id, name, date_start || null, date_end || null);
 
   if (albums && Array.isArray(albums)) {
-    albumTable.updateForEvent(id, albums);
+    await albumTable.updateForEvent(id, albums);
   }
 
-  const newAlbums = albumTable.findByEventId(id);
+  const newAlbums = await albumTable.findByEventId(id);
   const defaultAlbum = default_album_name
     ? newAlbums.find(a => a.name === default_album_name) ?? null
     : null;
-  eventTable.setDefaultAlbum(id, defaultAlbum?.id ?? null);
+  await eventTable.setDefaultAlbum(id, defaultAlbum?.id ?? null);
 
   return NextResponse.json(event);
 }

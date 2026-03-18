@@ -6,7 +6,7 @@ import { isAdmin } from '@/lib/authorization';
 export async function GET() {
   const session = await getSession();
   if (!isAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  return NextResponse.json(userTable.list());
+  return NextResponse.json(await userTable.list());
 }
 
 export async function POST(req: NextRequest) {
@@ -20,10 +20,10 @@ export async function POST(req: NextRequest) {
   if (role !== 'admin' && role !== 'event_manager') {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
   }
-  if (userTable.findByEmail(email)) {
+  if (await userTable.findByEmail(email)) {
     return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
   }
 
-  const user = userTable.insert(email, name, password, role);
+  const user = await userTable.insert(email, name, password, role);
   return NextResponse.json(user, { status: 201 });
 }

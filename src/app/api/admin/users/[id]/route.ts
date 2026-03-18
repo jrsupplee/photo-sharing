@@ -17,7 +17,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
   }
 
-  const user = userTable.update(id, { email, name, password, role });
+  const user = await userTable.update(id, { email, name, password, role });
   return NextResponse.json(user);
 }
 
@@ -35,6 +35,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
   }
 
-  userTable.delete(id);
+  await userTable.delete(id);
   return NextResponse.json({ success: true });
 }

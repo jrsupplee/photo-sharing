@@ -11,7 +11,7 @@ export async function GET(
   if (!isAdmin(session)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const event_ids = eventPermissionTable.getEventIdsForUser(id);
+  const event_ids = await eventPermissionTable.getEventIdsForUser(id);
   return NextResponse.json({ event_ids });
 }
 
@@ -29,6 +29,6 @@ export async function PUT(
     return NextResponse.json({ error: 'event_ids must be an array' }, { status: 400 });
   }
 
-  eventPermissionTable.setForUser(id, event_ids);
+  await eventPermissionTable.setForUser(id, event_ids);
   return NextResponse.json({ success: true });
 }

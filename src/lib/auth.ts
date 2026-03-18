@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = userTable.findByEmail(credentials.email);
+        const user = await userTable.findByEmail(credentials.email);
         if (!user) return null;
         if (!bcrypt.compareSync(credentials.password, user.password_hash)) return null;
 
@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         let sessionId = user.session_id;
         if (!sessionId && credentials.session_id) {
           sessionId = credentials.session_id;
-          userTable.setSessionId(user.id, sessionId);
+          await userTable.setSessionId(user.id, sessionId);
         }
 
         return { id: String(user.id), email: user.email, name: user.name, role: user.role, session_id: sessionId };

@@ -6,6 +6,7 @@ A wedding photo sharing app built with Next.js. Guests can browse galleries, upl
 
 - Node.js 18+
 - npm
+- SQLite (default, no extra setup) **or** a MySQL 8+ database
 
 ## Installation
 
@@ -26,13 +27,24 @@ ADMIN_PASSWORD=changeme
 NEXTAUTH_SECRET=generate-a-random-secret-here   # e.g. openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 
-# Optional — defaults shown
+# Database — SQLite (default, no extra config needed)
+DB_BACKEND=sqlite
 DATABASE_PATH=./data/wedding.db
+
+# Database — MySQL (set DB_BACKEND=mysql and fill these in)
+# DB_BACKEND=mysql
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_USER=wedding
+# DB_PASSWORD=secret
+# DB_NAME=wedding
+
+# Storage
 UPLOAD_DIR=./uploads
 STORAGE_BACKEND=disk
 ```
 
-The database file and upload directory are created automatically on first run.
+The database file (SQLite) and upload directory are created automatically on first run. Tables are created and migrated on startup for both backends.
 
 ## Development
 
@@ -53,6 +65,33 @@ npm start
 
 Make sure `NEXTAUTH_URL` is set to your public URL in production.
 
+## Database backends
+
+| Backend | Driver | When to use |
+|---------|--------|-------------|
+| `sqlite` (default) | `better-sqlite3` | Single-server deployments, easy setup |
+| `mysql` | `mysql2` | Multi-instance or managed database deployments |
+
+Switch backends by setting `DB_BACKEND` in your environment. Both use the same schema — tables are created automatically on first run.
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXTAUTH_SECRET` | — | NextAuth signing secret (required) |
+| `NEXTAUTH_URL` | — | App base URL (required) |
+| `ADMIN_EMAIL` | — | Admin email seeded on first run |
+| `ADMIN_PASSWORD` | — | Admin password seeded on first run |
+| `DB_BACKEND` | `sqlite` | Database backend: `sqlite` or `mysql` |
+| `DATABASE_PATH` | `./data/wedding.db` | SQLite file path |
+| `DB_HOST` | `localhost` | MySQL host |
+| `DB_PORT` | `3306` | MySQL port |
+| `DB_USER` | — | MySQL username |
+| `DB_PASSWORD` | — | MySQL password |
+| `DB_NAME` | — | MySQL database name |
+| `UPLOAD_DIR` | `./uploads` | Directory for uploaded files |
+| `STORAGE_BACKEND` | `disk` | Storage backend (`disk`) |
+
 ## Project structure
 
 ```
@@ -62,10 +101,14 @@ src/
     admin/              # Admin login and dashboard
     api/                # REST API routes
   lib/
-    repositories/       # All database access (one file per table)
+    db/                 # Database adapter layer
+      adapter.ts        # DbAdapter interface
+      sqlite-adapter.ts # better-sqlite3 implementation
+      mysql-adapter.ts  # mysql2 implementation
+      index.ts          # Factory and singleton getDb()
+    tables/             # All database access (one file per table)
     storage/            # Storage backend abstraction (disk by default)
     auth.ts             # NextAuth configuration
-    db.ts               # SQLite connection management
   components/           # Shared React components
   types/                # TypeScript types
 data/                   # SQLite database (auto-created)

@@ -12,7 +12,7 @@ export async function POST() {
   }
 
   const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
-  const missing = mediaTable.findMissingVariants();
+  const missing = await mediaTable.findMissingVariants();
 
   let processed = 0;
   let failed = 0;
@@ -31,7 +31,7 @@ export async function POST() {
       const variants = await generateImageVariants(buffer, item.storage_key, item.mime_type);
 
       if (variants) {
-        mediaTable.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey);
+        await mediaTable.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey);
         processed++;
       }
     } catch (err) {
@@ -50,7 +50,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    total: mediaTable.countImages(),
-    missing: mediaTable.countMissingVariants(),
+    total: await mediaTable.countImages(),
+    missing: await mediaTable.countMissingVariants(),
   });
 }

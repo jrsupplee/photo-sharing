@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { DbAdapter } from '@/lib/db/adapter';
 import getDb from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
@@ -10,67 +10,106 @@ export interface User {
   created_at: string;
 }
 
-export function seedAdminIfNeeded(db: Database.Database): void {
-  const userCount = (db.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n;
-  if (userCount === 0 && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+export async function seedAdminIfNeeded(adapter: DbAdapter): Promise<void> {
+  const row = await adapter.queryOne<{ n: number }>('SELECT COUNT(*) as n FROM users');
+  if (Number(row!.n) === 0 && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
-    db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, 'admin')`)
-      .run(process.env.ADMIN_EMAIL, 'Admin', hash);
+    await adapter.execute(
+      `INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, 'admin')`,
+      [process.env.ADMIN_EMAIL, 'Admin', hash],
+    );
   }
 }
 
 export const userTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        name TEXT NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'event_manager',
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-    `);
-    const cols = (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map(c => c.name);
-    if (!cols.includes('session_id')) db.exec('ALTER TABLE users ADD COLUMN session_id TEXT');
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          password_hash TEXT NOT NULL,
+          role VARCHAR(50) NOT NULL DEFAULT 'event_manager',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      if (!(await adapter.columnExists('users', 'session_id'))) {
+        await adapter.exec('ALTER TABLE users ADD COLUMN session_id VARCHAR(255)');
+      }
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'event_manager',
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+      if (!(await adapter.columnExists('users', 'session_id'))) {
+        await adapter.exec('ALTER TABLE users ADD COLUMN session_id TEXT');
+      }
+    }
   },
 
-  findById(id: number | string): User | undefined {
-    return getDb().prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id) as User | undefined;
+  async findById(id: number | string): Promise<User | undefined> {
+    const db = await getDb();
+    return db.queryOne<User>('SELECT id, email, name, role, created_at FROM users WHERE id = ?', [id]);
   },
 
-  findByEmail(email: string): (User & { password_hash: string; session_id: string | null }) | undefined {
-    return getDb().prepare('SELECT * FROM users WHERE email = ?').get(email) as (User & { password_hash: string; session_id: string | null }) | undefined;
+  async findByEmail(email: string): Promise<(User & { password_hash: string; session_id: string | null }) | undefined> {
+    const db = await getDb();
+    return db.queryOne<User & { password_hash: string; session_id: string | null }>(
+      'SELECT * FROM users WHERE email = ?',
+      [email],
+    );
   },
 
-  setSessionId(id: number | string, sessionId: string): void {
-    getDb().prepare('UPDATE users SET session_id = ? WHERE id = ?').run(sessionId, id);
+  async setSessionId(id: number | string, sessionId: string): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE users SET session_id = ? WHERE id = ?', [sessionId, id]);
   },
 
-  list(): User[] {
-    return getDb().prepare('SELECT id, email, name, role, created_at FROM users ORDER BY created_at ASC').all() as User[];
+  async list(): Promise<User[]> {
+    const db = await getDb();
+    return db.query<User>('SELECT id, email, name, role, created_at FROM users ORDER BY created_at ASC');
   },
 
-  insert(email: string, name: string, password: string, role: 'admin' | 'event_manager'): User {
-    const db = getDb();
+  async insert(email: string, name: string, password: string, role: 'admin' | 'event_manager'): Promise<User> {
+    const db = await getDb();
     const password_hash = bcrypt.hashSync(password, 10);
-    const result = db.prepare('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)').run(email, name, password_hash, role);
-    return db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(result.lastInsertRowid) as User;
+    const result = await db.execute(
+      'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
+      [email, name, password_hash, role],
+    );
+    return (await db.queryOne<User>(
+      'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
+      [result.lastInsertId],
+    ))!;
   },
 
-  update(id: number | string, fields: { email?: string; name?: string; password?: string; role?: 'admin' | 'event_manager' }): User {
-    const db = getDb();
-    if (fields.name !== undefined) db.prepare('UPDATE users SET name = ? WHERE id = ?').run(fields.name, id);
-    if (fields.email !== undefined) db.prepare('UPDATE users SET email = ? WHERE id = ?').run(fields.email, id);
-    if (fields.role !== undefined) db.prepare('UPDATE users SET role = ? WHERE id = ?').run(fields.role, id);
+  async update(
+    id: number | string,
+    fields: { email?: string; name?: string; password?: string; role?: 'admin' | 'event_manager' },
+  ): Promise<User> {
+    const db = await getDb();
+    if (fields.name !== undefined) await db.execute('UPDATE users SET name = ? WHERE id = ?', [fields.name, id]);
+    if (fields.email !== undefined) await db.execute('UPDATE users SET email = ? WHERE id = ?', [fields.email, id]);
+    if (fields.role !== undefined) await db.execute('UPDATE users SET role = ? WHERE id = ?', [fields.role, id]);
     if (fields.password !== undefined) {
       const hash = bcrypt.hashSync(fields.password, 10);
-      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, id);
+      await db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [hash, id]);
     }
-    return db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id) as User;
+    return (await db.queryOne<User>(
+      'SELECT id, email, name, role, created_at FROM users WHERE id = ?',
+      [id],
+    ))!;
   },
 
-  delete(id: number | string): void {
-    getDb().prepare('DELETE FROM users WHERE id = ?').run(id);
+  async delete(id: number | string): Promise<void> {
+    const db = await getDb();
+    await db.execute('DELETE FROM users WHERE id = ?', [id]);
   },
 };

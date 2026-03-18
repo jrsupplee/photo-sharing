@@ -12,8 +12,8 @@ export default async function DashboardPage() {
 
   const admin = isAdmin(session);
   const events = admin
-    ? eventTable.listWithCounts()
-    : eventTable.listWithCountsForUser(session.user.id);
+    ? await eventTable.listWithCounts()
+    : await eventTable.listWithCountsForUser(session.user.id);
 
   return (
     <div className="min-h-screen bg-cream">

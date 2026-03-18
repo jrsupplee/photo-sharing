@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { DbAdapter } from '@/lib/db/adapter';
 import getDb from '@/lib/db';
 
 export interface Like {
@@ -8,31 +8,57 @@ export interface Like {
 }
 
 export const likeTable = {
-  create(db: Database.Database): void {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS likes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        media_id INTEGER NOT NULL,
-        session_id TEXT NOT NULL,
-        UNIQUE(media_id, session_id),
-        FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
-      );
-    `);
+  async create(adapter: DbAdapter): Promise<void> {
+    if (adapter.dialect === 'mysql') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS likes (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          media_id INT NOT NULL,
+          session_id VARCHAR(255) NOT NULL,
+          UNIQUE KEY uq_like (media_id, session_id),
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+    } else {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS likes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          media_id INTEGER NOT NULL,
+          session_id TEXT NOT NULL,
+          UNIQUE(media_id, session_id),
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        )
+      `);
+    }
   },
 
-  countByMediaId(mediaId: number | string): number {
-    return (getDb().prepare('SELECT COUNT(*) as count FROM likes WHERE media_id = ?').get(mediaId) as { count: number }).count;
+  async countByMediaId(mediaId: number | string): Promise<number> {
+    const db = await getDb();
+    const row = await db.queryOne<{ count: number }>(
+      'SELECT COUNT(*) as count FROM likes WHERE media_id = ?',
+      [mediaId],
+    );
+    return Number(row!.count);
   },
 
-  exists(mediaId: number | string, sessionId: string): boolean {
-    return !!getDb().prepare('SELECT id FROM likes WHERE media_id = ? AND session_id = ?').get(mediaId, sessionId);
+  async exists(mediaId: number | string, sessionId: string): Promise<boolean> {
+    const db = await getDb();
+    return !!(await db.queryOne(
+      'SELECT id FROM likes WHERE media_id = ? AND session_id = ?',
+      [mediaId, sessionId],
+    ));
   },
 
-  insert(mediaId: number | string, sessionId: string): void {
-    getDb().prepare('INSERT INTO likes (media_id, session_id) VALUES (?, ?)').run(mediaId, sessionId);
+  async insert(mediaId: number | string, sessionId: string): Promise<void> {
+    const db = await getDb();
+    await db.execute('INSERT INTO likes (media_id, session_id) VALUES (?, ?)', [mediaId, sessionId]);
   },
 
-  delete(mediaId: number | string, sessionId: string): void {
-    getDb().prepare('DELETE FROM likes WHERE media_id = ? AND session_id = ?').run(mediaId, sessionId);
+  async delete(mediaId: number | string, sessionId: string): Promise<void> {
+    const db = await getDb();
+    await db.execute(
+      'DELETE FROM likes WHERE media_id = ? AND session_id = ?',
+      [mediaId, sessionId],
+    );
   },
 };
