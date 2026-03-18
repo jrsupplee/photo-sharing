@@ -1,6 +1,6 @@
-import type Database from 'better-sqlite3';
-import getDb from '@/lib/db';
-import { Album } from '@/types';
+import type Database from "better-sqlite3";
+import getDb from "@/lib/db";
+import { Album } from "@/types";
 
 export const albumTable = {
   create(db: Database.Database): void {
@@ -15,29 +15,58 @@ export const albumTable = {
     `);
   },
 
+  insert(album: {
+    eventId: string | number;
+    name: string;
+    order: number;
+  }): bigint | number {
+    const result = getDb()
+      .prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)')
+      .run(album.eventId, album.name, album.order);
+
+    return result.lastInsertRowid;
+  },
+
+  update(album: { id: string | number; name: string; order: number }): void {
+    getDb()
+      .prepare('UPDATE albums SET name = ?, "order" = ? WHERE id = ?')
+      .run(album.name, album.order, album.id);
+  },
+
   findByEventId(eventId: number | string): Album[] {
-    return getDb().prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(eventId) as Album[];
+    return getDb()
+      .prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC')
+      .all(eventId) as Album[];
   },
 
   /** Update albums for an event: update existing (by id), insert new (id=0), delete removed */
-  updateForEvent(eventId: number | string, albums: { id: number; name: string; order: number }[]): void {
+  updateForEvent(
+    eventId: number | string,
+    albums: { id: number; name: string; order: number }[],
+  ): void {
     const db = getDb();
     const existingIds = new Set(
-      (db.prepare('SELECT id FROM albums WHERE event_id = ?').all(eventId) as { id: number }[]).map(r => r.id)
+      (
+        db.prepare("SELECT id FROM albums WHERE event_id = ?").all(eventId) as {
+          id: number;
+        }[]
+      ).map((r) => r.id),
     );
-    const incomingIds = new Set(albums.filter(a => a.id > 0).map(a => a.id));
+    const incomingIds = new Set(
+      albums.filter((a) => a.id > 0).map((a) => a.id),
+    );
 
     db.transaction(() => {
       for (const existingId of existingIds) {
         if (!incomingIds.has(existingId)) {
-          db.prepare('DELETE FROM albums WHERE id = ?').run(existingId);
+          db.prepare("DELETE FROM albums WHERE id = ?").run(existingId);
         }
       }
       for (const album of albums) {
         if (album.id > 0 && existingIds.has(album.id)) {
-          db.prepare('UPDATE albums SET name = ?, "order" = ? WHERE id = ?').run(album.name, album.order, album.id);
+          this.update(album);
         } else {
-          db.prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)').run(eventId, album.name, album.order);
+          this.insert({ eventId, ...album });
         }
       }
     })();
