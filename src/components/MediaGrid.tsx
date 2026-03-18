@@ -7,7 +7,7 @@ import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/plugins/captions.css';
-import Video from 'yet-another-react-lightbox/plugins/video';
+import ReactPlayer from 'react-player';
 import { Media } from '@/types';
 import { Comment } from '@/types';
 
@@ -131,23 +131,14 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
     setSavingEdit(false);
   };
 
-  const slides = mediaItems.map(item => {
-    if (item.mime_type?.startsWith('video/')) {
-      return {
-        type: 'video' as const,
-        sources: [{ src: `/api/files/${item.storage_key}`, type: item.mime_type }],
-        description: item.caption || '',
-        width: 1280,
-        height: 720,
-      };
-    }
-    return {
-      src: `/api/files/${item.medium_key ?? item.storage_key}`,
-      description: item.caption || '',
-      width: 1200,
-      height: 900,
-    };
-  });
+  const slides = mediaItems.map(item => ({
+    src: item.mime_type?.startsWith('video/')
+      ? (item.medium_key ? `/api/files/${item.medium_key}` : '')
+      : `/api/files/${item.medium_key ?? item.storage_key}`,
+    description: item.caption || '',
+    width: 1200,
+    height: 900,
+  }));
 
   const photos = mediaItems.map((item, index) => ({
     src: `/api/files/${item.thumbnail_key ?? item.storage_key}`,
@@ -188,8 +179,13 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
             return (
               <div key={item.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: 8, cursor: 'pointer', width: '100%' }} className="group bg-stone-100" onClick={onClick}>
                 {isVideo ? (
-                  <div className="relative w-full h-full bg-stone-900 flex items-center justify-center aspect-video">
-                    <video src={`/api/files/${item.storage_key}`} className="w-full h-full object-cover opacity-70" muted preload="metadata" />
+                  <div className="relative w-full bg-stone-900 aspect-video flex items-center justify-center">
+                    {item.medium_key ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`/api/files/${item.medium_key}`} alt={item.caption || item.original_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-stone-800" />
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
                         <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
@@ -238,7 +234,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
         close={() => { setLightboxOpen(false); setShowComments(false); setShowEdit(false); }}
         slides={slides}
         on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setShowEdit(false); setComments([]); } }}
-        plugins={[Captions, Video]}
+        plugins={[Captions]}
         captions={{ showToggle: true, descriptionTextAlign: 'center' }}
         styles={{
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
@@ -246,6 +242,23 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
           captionsDescription: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)' },
         }}
         render={{
+          slide: ({ slide, rect }) => {
+            const item = mediaItems[slides.indexOf(slide)];
+            if (!item?.mime_type?.startsWith('video/')) return undefined;
+            return (
+              <div style={{ width: rect.width, height: rect.height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ReactPlayer
+                  url={`/api/files/${item.storage_key}`}
+                  playing
+                  controls
+                  width="100%"
+                  height="100%"
+                  style={{ maxWidth: rect.width, maxHeight: rect.height }}
+                  config={{ file: { attributes: { poster: item.medium_key ? `/api/files/${item.medium_key}` : undefined } } }}
+                />
+              </div>
+            );
+          },
           controls: () => {
             if (!currentMedia) return null;
             const canEdit = isAdmin || currentMedia.session_id === sessionId;
