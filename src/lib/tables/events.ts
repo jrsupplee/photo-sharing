@@ -9,6 +9,7 @@ export interface Event {
   date_start: string | null;
   date_end: string | null;
   default_album_id: number | null;
+  require_name: number;
   created_at: string;
 }
 
@@ -28,6 +29,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'default_album_id'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INT');
       }
+      if (!(await adapter.columnExists('events', 'require_name'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN require_name TINYINT(1) NOT NULL DEFAULT 0');
+      }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -42,6 +46,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'default_album_id'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INT');
       }
+      if (!(await adapter.columnExists('events', 'require_name'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN require_name SMALLINT NOT NULL DEFAULT 0');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -55,6 +62,9 @@ export const eventTable = {
       `);
       if (!(await adapter.columnExists('events', 'default_album_id'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
+      }
+      if (!(await adapter.columnExists('events', 'require_name'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN require_name INTEGER NOT NULL DEFAULT 0');
       }
     }
   },
@@ -114,13 +124,14 @@ export const eventTable = {
     dateStart: string | null,
     dateEnd: string | null,
     albums: string[],
+    requireName: boolean = false,
   ): Promise<Event> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
     const eventId = await db.transaction(async tx => {
       const res = await tx.execute(
-        'INSERT INTO events (slug, name, date_start, date_end) VALUES (?, ?, ?, ?)',
-        [slug, name, dateStart, dateEnd],
+        'INSERT INTO events (slug, name, date_start, date_end, require_name) VALUES (?, ?, ?, ?, ?)',
+        [slug, name, dateStart, dateEnd, requireName ? 1 : 0],
       );
       for (const [index, albumName] of albums.entries()) {
         if (albumName.trim()) {
@@ -140,11 +151,12 @@ export const eventTable = {
     name: string,
     dateStart: string | null,
     dateEnd: string | null,
+    requireName: boolean = false,
   ): Promise<Event> {
     const db = await getDb();
     await db.execute(
-      'UPDATE events SET name = ?, date_start = ?, date_end = ? WHERE id = ?',
-      [name, dateStart, dateEnd, id],
+      'UPDATE events SET name = ?, date_start = ?, date_end = ?, require_name = ? WHERE id = ?',
+      [name, dateStart, dateEnd, requireName ? 1 : 0, id],
     );
     return (await db.queryOne<Event>('SELECT * FROM events WHERE id = ?', [id]))!;
   },

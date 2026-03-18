@@ -4,15 +4,17 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Album } from '@/types';
 
 const STORAGE_KEY = 'uploader_name';
+const ALBUM_STORAGE_KEY = 'upload_album_id';
 
 interface UploadFormProps {
   eventSlug: string;
   albums: Album[];
   defaultAlbumId?: number | null;
+  requireName?: boolean;
   onUploadComplete?: () => void;
 }
 
-export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUploadComplete }: UploadFormProps) {
+export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireName = false, onUploadComplete }: UploadFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploaderName, setUploaderName] = useState('');
   const [caption, setCaption] = useState('');
@@ -21,11 +23,12 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setUploaderName(saved);
   }, []);
-  const [albumId, setAlbumId] = useState<string>(() =>
-    defaultAlbumId != null && albums.some(a => a.id === defaultAlbumId)
-      ? String(defaultAlbumId)
-      : ''
-  );
+  const [albumId, setAlbumId] = useState<string>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(ALBUM_STORAGE_KEY) : null;
+    if (saved && albums.some(a => String(a.id) === saved)) return saved;
+    if (defaultAlbumId != null && albums.some(a => a.id === defaultAlbumId)) return String(defaultAlbumId);
+    return '';
+  });
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
@@ -92,6 +95,8 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
     if (files.length === 0) return;
 
     if (uploaderName) localStorage.setItem(STORAGE_KEY, uploaderName);
+    if (albumId) localStorage.setItem(ALBUM_STORAGE_KEY, albumId);
+    else localStorage.removeItem(ALBUM_STORAGE_KEY);
     const sessionId = document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? null;
 
     setUploading(true);
@@ -250,12 +255,15 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, onUpload
       {/* Fields */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Your Name</label>
+          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">
+            Your Name{requireName && <span className="text-rose-400 ml-0.5">*</span>}
+          </label>
           <input
             type="text"
             value={uploaderName}
             onChange={e => setUploaderName(e.target.value)}
             placeholder="Jane & John"
+            required={requireName}
             className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 placeholder-stone-300 focus:outline-none focus:border-stone-400 transition-colors text-sm"
           />
         </div>

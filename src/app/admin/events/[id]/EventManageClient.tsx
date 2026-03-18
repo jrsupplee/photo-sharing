@@ -16,6 +16,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [name, setName] = useState(event.name);
   const [dateStart, setDateStart] = useState(event.date_start || '');
   const [dateEnd, setDateEnd] = useState(event.date_end || '');
+  const [requireName, setRequireName] = useState(!!event.require_name);
   const [albums, setAlbums] = useState<{ id: number; name: string }[]>(initialAlbums.map(a => ({ id: a.id, name: a.name })));
   const [defaultAlbumName, setDefaultAlbumName] = useState<string>(
     initialAlbums.find(a => a.id === event.default_album_id)?.name ?? ''
@@ -67,6 +68,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         date_end: dateEnd || null,
         albums: albums.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i })),
         default_album_name: defaultAlbumName || null,
+        require_name: requireName,
       }),
     });
     if (res.ok) {
@@ -166,6 +168,15 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                 />
               </div>
             </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={requireName}
+                onChange={e => setRequireName(e.target.checked)}
+                className="w-4 h-4 rounded border-stone-300 text-stone-800 focus:ring-stone-400"
+              />
+              <span className="text-sm text-stone-600">Require uploader name</span>
+            </label>
             <SaveBar />
           </form>
         </div>

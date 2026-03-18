@@ -10,6 +10,7 @@ export default function NewEventForm() {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [albums, setAlbums] = useState(['Ceremony', 'Reception']);
+  const [requireName, setRequireName] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,6 +56,7 @@ export default function NewEventForm() {
         date_start: dateStart || null,
         date_end: dateEnd || null,
         albums: albums.filter(a => a.trim()),
+        require_name: requireName,
       }),
     });
 
@@ -159,6 +161,16 @@ export default function NewEventForm() {
           )}
         </div>
       </div>
+
+      <label className="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={requireName}
+          onChange={e => setRequireName(e.target.checked)}
+          className="w-4 h-4 rounded border-stone-300 text-stone-800 focus:ring-stone-400"
+        />
+        <span className="text-sm text-stone-600">Require uploader name</span>
+      </label>
 
       {error && (
         <p className="text-rose-500 text-sm">{error}</p>

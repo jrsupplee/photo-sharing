@@ -43,7 +43,7 @@ export default async function UploadPage({ params }: Props) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 sm:p-8">
-          <UploadForm eventSlug={eventSlug} albums={albums} defaultAlbumId={event.default_album_id} />
+          <UploadForm eventSlug={eventSlug} albums={albums} defaultAlbumId={event.default_album_id} requireName={!!event.require_name} />
         </div>
       </main>
     </div>

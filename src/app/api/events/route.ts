@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, slug, date_start, date_end, albums } = body;
+  const { name, slug, date_start, date_end, albums, require_name } = body;
 
   if (!name || !slug) {
     return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
   }
 
-  const event = await eventTable.insert(slug, name, date_start || null, date_end || null, albums || []);
+  const event = await eventTable.insert(slug, name, date_start || null, date_end || null, albums || [], !!require_name);
   return NextResponse.json(event, { status: 201 });
 }
 
