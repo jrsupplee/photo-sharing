@@ -16,7 +16,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [name, setName] = useState(event.name);
   const [dateStart, setDateStart] = useState(event.date_start || '');
   const [dateEnd, setDateEnd] = useState(event.date_end || '');
-  const [albums, setAlbums] = useState<string[]>(initialAlbums.map(a => a.name));
+  const [albums, setAlbums] = useState<{ id: number; name: string }[]>(initialAlbums.map(a => ({ id: a.id, name: a.name })));
   const [defaultAlbumName, setDefaultAlbumName] = useState<string>(
     initialAlbums.find(a => a.id === event.default_album_id)?.name ?? ''
   );
@@ -27,13 +27,13 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'download' | 'delete'>('general');
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
 
-  const addAlbum = () => setAlbums(prev => [...prev, '']);
+  const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '' }]);
   const updateAlbum = (i: number, v: string) => {
-    if (albums[i] === defaultAlbumName) setDefaultAlbumName(v);
-    setAlbums(prev => prev.map((a, idx) => idx === i ? v : a));
+    if (albums[i].name === defaultAlbumName) setDefaultAlbumName(v);
+    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, name: v } : a));
   };
   const removeAlbum = (i: number) => {
-    if (albums[i] === defaultAlbumName) setDefaultAlbumName('');
+    if (albums[i].name === defaultAlbumName) setDefaultAlbumName('');
     setAlbums(prev => prev.filter((_, idx) => idx !== i));
   };
   const dragIndex = useRef<number | null>(null);
@@ -65,7 +65,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         name,
         date_start: dateStart || null,
         date_end: dateEnd || null,
-        albums: albums.filter(a => a.trim()),
+        albums: albums.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i })),
         default_album_name: defaultAlbumName || null,
       }),
     });
@@ -203,7 +203,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                     </div>
                     <input
                       type="text"
-                      value={album}
+                      value={album.name}
                       onChange={e => updateAlbum(index, e.target.value)}
                       placeholder={`Album ${index + 1}`}
                       className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
@@ -221,7 +221,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
               </div>
             </div>
 
-            {albums.filter(a => a.trim()).length > 0 && (
+            {albums.filter(a => a.name.trim()).length > 0 && (
               <div>
                 <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Default Upload Album</label>
                 <select
@@ -230,8 +230,8 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                   className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm bg-white"
                 >
                   <option value="">No default</option>
-                  {albums.filter(a => a.trim()).map((album, i) => (
-                    <option key={i} value={album}>{album}</option>
+                  {albums.filter(a => a.name.trim()).map((album, i) => (
+                    <option key={i} value={album.name}>{album.name}</option>
                   ))}
                 </select>
                 <p className="text-xs text-stone-400 mt-1 font-light">Guest uploads will be placed in this album by default</p>

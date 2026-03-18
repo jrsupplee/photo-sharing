@@ -19,15 +19,27 @@ export const albumTable = {
     return getDb().prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(eventId) as Album[];
   },
 
-  /** Replace all albums for an event (delete + re-insert) */
-  replaceForEvent(eventId: number | string, names: string[]): void {
+  /** Update albums for an event: update existing (by id), insert new (id=0), delete removed */
+  updateForEvent(eventId: number | string, albums: { id: number; name: string; order: number }[]): void {
     const db = getDb();
-    const insert = db.prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)');
+    const existingIds = new Set(
+      (db.prepare('SELECT id FROM albums WHERE event_id = ?').all(eventId) as { id: number }[]).map(r => r.id)
+    );
+    const incomingIds = new Set(albums.filter(a => a.id > 0).map(a => a.id));
+
     db.transaction(() => {
-      db.prepare('DELETE FROM albums WHERE event_id = ?').run(eventId);
-      names.forEach((name, index) => {
-        if (name.trim()) insert.run(eventId, name.trim(), index);
-      });
+      for (const existingId of existingIds) {
+        if (!incomingIds.has(existingId)) {
+          db.prepare('DELETE FROM albums WHERE id = ?').run(existingId);
+        }
+      }
+      for (const album of albums) {
+        if (album.id > 0 && existingIds.has(album.id)) {
+          db.prepare('UPDATE albums SET name = ?, "order" = ? WHERE id = ?').run(album.name, album.order, album.id);
+        } else {
+          db.prepare('INSERT INTO albums (event_id, name, "order") VALUES (?, ?, ?)').run(eventId, album.name, album.order);
+        }
+      }
     })();
   },
 };

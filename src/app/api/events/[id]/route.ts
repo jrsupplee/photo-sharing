@@ -45,10 +45,9 @@ export async function PUT(
   const event = eventTable.update(id, name, date_start || null, date_end || null);
 
   if (albums && Array.isArray(albums)) {
-    albumTable.replaceForEvent(id, albums);
+    albumTable.updateForEvent(id, albums);
   }
 
-  // Resolve default album by name after replacement (IDs change on every replace)
   const newAlbums = albumTable.findByEventId(id);
   const defaultAlbum = default_album_name
     ? newAlbums.find(a => a.name === default_album_name) ?? null
