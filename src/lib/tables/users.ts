@@ -1,7 +1,14 @@
 import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
-import { User } from '@/types';
 import bcrypt from 'bcryptjs';
+
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'event_manager';
+  created_at: string;
+}
 
 export function seedAdminIfNeeded(db: Database.Database): void {
   const userCount = (db.prepare('SELECT COUNT(*) as n FROM users').get() as { n: number }).n;

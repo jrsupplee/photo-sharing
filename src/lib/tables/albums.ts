@@ -1,6 +1,12 @@
 import type Database from "better-sqlite3";
 import getDb from "@/lib/db";
-import { Album } from "@/types";
+
+export interface Album {
+  id: number;
+  event_id: number;
+  name: string;
+  order: number;
+}
 
 export const albumTable = {
   create(db: Database.Database): void {

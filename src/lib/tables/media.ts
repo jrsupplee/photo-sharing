@@ -1,6 +1,29 @@
 import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
-import { Media } from '@/types';
+
+export interface Media {
+  id: number;
+  event_id: number;
+  album_id: number | null;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  caption: string | null;
+  uploader_name: string | null;
+  session_id: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  storage_key: string;
+  thumbnail_key: string | null;
+  medium_key: string | null;
+  created_at: string;
+  // joined fields
+  album_name?: string;
+  like_count?: number;
+  comment_count?: number;
+  user_liked?: number;
+}
 
 export const mediaTable = {
   create(db: Database.Database): void {

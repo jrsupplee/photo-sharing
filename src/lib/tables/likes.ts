@@ -1,6 +1,12 @@
 import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 
+export interface Like {
+  id: number;
+  media_id: number;
+  session_id: string;
+}
+
 export const likeTable = {
   create(db: Database.Database): void {
     db.exec(`

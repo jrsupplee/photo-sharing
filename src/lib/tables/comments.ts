@@ -1,6 +1,14 @@
 import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
-import { Comment } from '@/types';
+
+export interface Comment {
+  id: number;
+  media_id: number;
+  author_name: string;
+  body: string;
+  session_id: string | null;
+  created_at: string;
+}
 
 export const commentTable = {
   create(db: Database.Database): void {

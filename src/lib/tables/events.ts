@@ -1,7 +1,16 @@
 import type Database from "better-sqlite3";
 import getDb from "@/lib/db";
-import { Event } from "@/types";
 import { albumTable } from "./albums";
+
+export interface Event {
+  id: number;
+  slug: string;
+  name: string;
+  date_start: string | null;
+  date_end: string | null;
+  default_album_id: number | null;
+  created_at: string;
+}
 
 export const eventTable = {
   create(db: Database.Database): void {
