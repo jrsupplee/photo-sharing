@@ -28,6 +28,20 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'default_album_id'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INT');
       }
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS events (
+          id SERIAL PRIMARY KEY,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          date_start VARCHAR(20),
+          date_end VARCHAR(20),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      if (!(await adapter.columnExists('events', 'default_album_id'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN default_album_id INT');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (

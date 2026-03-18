@@ -24,6 +24,18 @@ export const commentTable = {
           FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id SERIAL PRIMARY KEY,
+          media_id INT NOT NULL,
+          author_name VARCHAR(255) NOT NULL,
+          body TEXT NOT NULL,
+          session_id VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        )
+      `);
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS comments (

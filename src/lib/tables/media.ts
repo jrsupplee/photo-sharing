@@ -58,6 +58,37 @@ export const mediaTable = {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} ${type}`);
         }
       }
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS media (
+          id SERIAL PRIMARY KEY,
+          event_id INT NOT NULL,
+          album_id INT,
+          filename VARCHAR(512) NOT NULL,
+          original_name VARCHAR(512) NOT NULL,
+          mime_type VARCHAR(255) NOT NULL,
+          size INT NOT NULL,
+          caption TEXT,
+          uploader_name VARCHAR(255),
+          session_id VARCHAR(255),
+          storage_key VARCHAR(512) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+          FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
+        )
+      `);
+      const pgCols: Record<string, string> = {
+        thumbnail_key: 'VARCHAR(512)',
+        medium_key: 'VARCHAR(512)',
+        deleted_at: 'TIMESTAMP',
+        deleted_by: 'VARCHAR(255)',
+        file_hash: 'VARCHAR(64)',
+      };
+      for (const [col, type] of Object.entries(pgCols)) {
+        if (!(await adapter.columnExists('media', col))) {
+          await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} ${type}`);
+        }
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS media (

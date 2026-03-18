@@ -20,6 +20,16 @@ export const albumTable = {
           FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS albums (
+          id SERIAL PRIMARY KEY,
+          event_id INT NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          "order" INT DEFAULT 0,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )
+      `);
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (

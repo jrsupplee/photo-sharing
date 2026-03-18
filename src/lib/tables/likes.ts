@@ -19,6 +19,16 @@ export const likeTable = {
           FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS likes (
+          id SERIAL PRIMARY KEY,
+          media_id INT NOT NULL,
+          session_id VARCHAR(255) NOT NULL,
+          UNIQUE (media_id, session_id),
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+        )
+      `);
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS likes (

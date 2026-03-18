@@ -22,10 +22,10 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Data layer
 
-- **SQLite** (default) or **MySQL** — selected via `DB_BACKEND` env var (`sqlite` | `mysql`).
-- SQLite uses `better-sqlite3` at `DATABASE_PATH` (default `./data/wedding.db`). MySQL uses `mysql2/promise` with a connection pool configured by `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- **SQLite** (default), **MySQL**, or **PostgreSQL** — selected via `DB_BACKEND` env var (`sqlite` | `mysql` | `postgres`).
+- SQLite uses `better-sqlite3` at `DATABASE_PATH` (default `./data/wedding.db`). MySQL and PostgreSQL use `mysql2/promise` and `pg` respectively, both configured via `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
 - `getDb()` in `src/lib/db/index.ts` returns a `Promise<DbAdapter>` singleton. On first call it creates the right adapter, runs each table's `create(adapter)` function in dependency order (creates table + applies column migrations), then calls `seedAdminIfNeeded(adapter)`.
-- The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite (`src/lib/db/sqlite-adapter.ts`) wraps `better-sqlite3` synchronously; MySQL (`src/lib/db/mysql-adapter.ts`) wraps `mysql2/promise` with pool + per-connection transaction support.
+- The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite wraps `better-sqlite3` synchronously; MySQL wraps `mysql2/promise`; PostgreSQL wraps `pg` with `?`→`$n` placeholder rewriting and `RETURNING id` appended to INSERTs for last-insert-id. Transactions use pool connections for MySQL/PostgreSQL.
 - **All table methods are async** and return Promises. `db/index.ts` imports table files directly (not from the barrel) to avoid circular imports — `create()` functions accept an adapter param and do not call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(adapter)` exported from `src/lib/tables/users.ts`.
 - Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
@@ -58,7 +58,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `DB_BACKEND` | `sqlite` | Database backend: `sqlite` or `mysql` |
+| `DB_BACKEND` | `sqlite` | Database backend: `sqlite`, `mysql`, or `postgres` |
 | `DATABASE_PATH` | `./data/wedding.db` | SQLite file location |
 | `DB_HOST` | `localhost` | MySQL host |
 | `DB_PORT` | `3306` | MySQL port |

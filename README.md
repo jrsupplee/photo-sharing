@@ -6,7 +6,7 @@ A wedding photo sharing app built with Next.js. Guests can browse galleries, upl
 
 - Node.js 18+
 - npm
-- SQLite (default, no extra setup) **or** a MySQL 8+ database
+- SQLite (default, no extra setup), MySQL 8+, or PostgreSQL 14+
 
 ## Installation
 
@@ -39,6 +39,14 @@ DATABASE_PATH=./data/wedding.db
 # DB_PASSWORD=secret
 # DB_NAME=wedding
 
+# Database — PostgreSQL (set DB_BACKEND=postgres and fill these in)
+# DB_BACKEND=postgres
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_USER=wedding
+# DB_PASSWORD=secret
+# DB_NAME=wedding
+
 # Storage
 UPLOAD_DIR=./uploads
 STORAGE_BACKEND=disk
@@ -67,12 +75,13 @@ Make sure `NEXTAUTH_URL` is set to your public URL in production.
 
 ## Database backends
 
-| Backend | Driver | When to use |
-|---------|--------|-------------|
-| `sqlite` (default) | `better-sqlite3` | Single-server deployments, easy setup |
-| `mysql` | `mysql2` | Multi-instance or managed database deployments |
+| Backend | Driver | Default port | When to use |
+|---------|--------|--------------|-------------|
+| `sqlite` (default) | `better-sqlite3` | — | Single-server deployments, easy setup |
+| `mysql` | `mysql2` | 3306 | Multi-instance or managed MySQL deployments |
+| `postgres` | `pg` | 5432 | Multi-instance or managed PostgreSQL deployments |
 
-Switch backends by setting `DB_BACKEND` in your environment. Both use the same schema — tables are created automatically on first run.
+Switch backends by setting `DB_BACKEND` in your environment. All three use the same schema — tables are created automatically on first run.
 
 ## Environment variables
 
@@ -82,7 +91,7 @@ Switch backends by setting `DB_BACKEND` in your environment. Both use the same s
 | `NEXTAUTH_URL` | — | App base URL (required) |
 | `ADMIN_EMAIL` | — | Admin email seeded on first run |
 | `ADMIN_PASSWORD` | — | Admin password seeded on first run |
-| `DB_BACKEND` | `sqlite` | Database backend: `sqlite` or `mysql` |
+| `DB_BACKEND` | `sqlite` | Database backend: `sqlite`, `mysql`, or `postgres` |
 | `DATABASE_PATH` | `./data/wedding.db` | SQLite file path |
 | `DB_HOST` | `localhost` | MySQL host |
 | `DB_PORT` | `3306` | MySQL port |

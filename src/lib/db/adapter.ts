@@ -1,5 +1,5 @@
 export interface DbAdapter {
-  readonly dialect: 'sqlite' | 'mysql';
+  readonly dialect: 'sqlite' | 'mysql' | 'postgres';
   query<T>(sql: string, params?: unknown[]): Promise<T[]>;
   queryOne<T>(sql: string, params?: unknown[]): Promise<T | undefined>;
   execute(sql: string, params?: unknown[]): Promise<{ lastInsertId: number | bigint }>;

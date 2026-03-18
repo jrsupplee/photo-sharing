@@ -2,8 +2,10 @@ import path from 'path';
 import fs from 'fs';
 import Database from 'better-sqlite3';
 import mysql from 'mysql2/promise';
+import { Pool as PgPool } from 'pg';
 import { SqliteAdapter } from './sqlite-adapter';
 import { MySqlAdapter } from './mysql-adapter';
+import { PostgresAdapter } from './postgres-adapter';
 import type { DbAdapter } from './adapter';
 import { eventTable } from '../tables/events';
 import { albumTable } from '../tables/albums';
@@ -31,6 +33,16 @@ async function initDb(): Promise<DbAdapter> {
       connectionLimit: 10,
     });
     adapter = new MySqlAdapter(pool);
+  } else if (backend === 'postgres') {
+    const pool = new PgPool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      max: 10,
+    });
+    adapter = new PostgresAdapter(pool);
   } else {
     const dbPath = process.env.DATABASE_PATH || './data/wedding.db';
     const absoluteDbPath = path.resolve(process.cwd(), dbPath);

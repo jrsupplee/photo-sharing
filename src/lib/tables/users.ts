@@ -37,6 +37,20 @@ export const userTable = {
       if (!(await adapter.columnExists('users', 'session_id'))) {
         await adapter.exec('ALTER TABLE users ADD COLUMN session_id VARCHAR(255)');
       }
+    } else if (adapter.dialect === 'postgres') {
+      await adapter.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          password_hash TEXT NOT NULL,
+          role VARCHAR(50) NOT NULL DEFAULT 'event_manager',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      if (!(await adapter.columnExists('users', 'session_id'))) {
+        await adapter.exec('ALTER TABLE users ADD COLUMN session_id VARCHAR(255)');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS users (
