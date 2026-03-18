@@ -1,19 +1,19 @@
 import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 
-export function createTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS likes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      media_id INTEGER NOT NULL,
-      session_id TEXT NOT NULL,
-      UNIQUE(media_id, session_id),
-      FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
-    );
-  `);
-}
-
 export const likeTable = {
+  create(db: Database.Database): void {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS likes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_id INTEGER NOT NULL,
+        session_id TEXT NOT NULL,
+        UNIQUE(media_id, session_id),
+        FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+      );
+    `);
+  },
+
   countByMediaId(mediaId: number | string): number {
     return (getDb().prepare('SELECT COUNT(*) as count FROM likes WHERE media_id = ?').get(mediaId) as { count: number }).count;
   },

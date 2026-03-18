@@ -2,19 +2,19 @@ import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { Album } from '@/types';
 
-export function createTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS albums (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      "order" INTEGER DEFAULT 0,
-      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-    );
-  `);
-}
-
 export const albumTable = {
+  create(db: Database.Database): void {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS albums (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        "order" INTEGER DEFAULT 0,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      );
+    `);
+  },
+
   findByEventId(eventId: number | string): Album[] {
     return getDb().prepare('SELECT * FROM albums WHERE event_id = ? ORDER BY "order" ASC').all(eventId) as Album[];
   },

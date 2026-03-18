@@ -2,23 +2,23 @@ import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { Comment } from '@/types';
 
-export function createTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS comments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      media_id INTEGER NOT NULL,
-      author_name TEXT NOT NULL,
-      body TEXT NOT NULL,
-      session_id TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
-    );
-  `);
-  const cols = (db.prepare('PRAGMA table_info(comments)').all() as { name: string }[]).map(c => c.name);
-  if (!cols.includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
-}
-
 export const commentTable = {
+  create(db: Database.Database): void {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_id INTEGER NOT NULL,
+        author_name TEXT NOT NULL,
+        body TEXT NOT NULL,
+        session_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+      );
+    `);
+    const cols = (db.prepare('PRAGMA table_info(comments)').all() as { name: string }[]).map(c => c.name);
+    if (!cols.includes('session_id')) db.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
+  },
+
   findByMediaId(mediaId: number | string): Comment[] {
     return getDb().prepare('SELECT * FROM comments WHERE media_id = ? ORDER BY created_at ASC').all(mediaId) as Comment[];
   },

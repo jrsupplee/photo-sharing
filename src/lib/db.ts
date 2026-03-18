@@ -1,13 +1,13 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { createTable as createEventsTable } from './tables/events';
-import { createTable as createAlbumsTable } from './tables/albums';
-import { createTable as createUsersTable, seedAdminIfNeeded } from './tables/users';
-import { createTable as createMediaTable } from './tables/media';
-import { createTable as createCommentsTable } from './tables/comments';
-import { createTable as createLikesTable } from './tables/likes';
-import { createTable as createEventPermissionsTable } from './tables/event-permissions';
+import { eventTable } from './tables/events';
+import { albumTable } from './tables/albums';
+import { userTable, seedAdminIfNeeded } from './tables/users';
+import { mediaTable } from './tables/media';
+import { commentTable } from './tables/comments';
+import { likeTable } from './tables/likes';
+import { eventPermissionTable } from './tables/event-permissions';
 
 const dbPath = process.env.DATABASE_PATH || './data/wedding.db';
 const absoluteDbPath = path.resolve(process.cwd(), dbPath);
@@ -26,13 +26,13 @@ function getDb(): Database.Database {
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     // Create tables in dependency order
-    createEventsTable(db);
-    createAlbumsTable(db);
-    createUsersTable(db);
-    createMediaTable(db);
-    createCommentsTable(db);
-    createLikesTable(db);
-    createEventPermissionsTable(db);
+    eventTable.create(db);
+    albumTable.create(db);
+    userTable.create(db);
+    mediaTable.create(db);
+    commentTable.create(db);
+    likeTable.create(db);
+    eventPermissionTable.create(db);
     seedAdminIfNeeded(db);
   }
   return db;

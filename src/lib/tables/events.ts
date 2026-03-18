@@ -2,22 +2,22 @@ import type Database from 'better-sqlite3';
 import getDb from '@/lib/db';
 import { Event } from '@/types';
 
-export function createTable(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slug TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      date_start TEXT,
-      date_end TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-  const cols = (db.prepare('PRAGMA table_info(events)').all() as { name: string }[]).map(c => c.name);
-  if (!cols.includes('default_album_id')) db.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
-}
-
 export const eventTable = {
+  create(db: Database.Database): void {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        date_start TEXT,
+        date_end TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+    const cols = (db.prepare('PRAGMA table_info(events)').all() as { name: string }[]).map(c => c.name);
+    if (!cols.includes('default_album_id')) db.exec('ALTER TABLE events ADD COLUMN default_album_id INTEGER');
+  },
+
   /** Public listing ordered by event date */
   listByDate(): Event[] {
     return getDb().prepare('SELECT * FROM events ORDER BY date_start ASC').all() as Event[];
