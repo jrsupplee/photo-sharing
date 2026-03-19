@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
     unoptimized: true,
   },
-  serverExternalPackages: ['better-sqlite3'],
+  serverExternalPackages: ['better-sqlite3', '@ffmpeg-installer/ffmpeg'],
 };
 
 export default nextConfig;

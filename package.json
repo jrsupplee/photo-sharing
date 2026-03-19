@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@types/archiver": "^7.0.0",
     "@types/sharp": "^0.31.1",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.8.0",
+    "fluent-ffmpeg": "^2.1.3",
     "mysql2": "^3.20.0",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
