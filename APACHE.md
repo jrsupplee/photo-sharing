@@ -83,8 +83,8 @@ module.exports = {
   apps: [
     {
       name: "photo-sharing",
-      script: "node",
-      args: "server.js",
+      script: "node_modules/.bin/next",
+      args: "start",
       cwd: "/path/to/photo-sharing",
       env_file: "/etc/photo-sharing.env",
       user: "www-data",
@@ -134,7 +134,7 @@ Type=simple
 User=www-data
 WorkingDirectory=/path/to/photo-sharing
 EnvironmentFile=/etc/photo-sharing.env
-ExecStart=/usr/bin/node server.js
+ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=5
 
