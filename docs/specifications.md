@@ -231,22 +231,22 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 
 ### 7.2 Events
 
-| Method | Route                       | Auth           | Description                    |
-| ------ | --------------------------- | -------------- | ------------------------------ |
-| GET    | `/api/events`               | admin          | List all events                |
-| POST   | `/api/events`               | admin          | Create event                   |
-| PUT    | `/api/events/[id]`          | canManageEvent | Update event                   |
-| DELETE | `/api/events/[id]`          | admin          | Delete event                   |
-| POST   | `/api/events/[id]/avatar`   | canManageEvent | Upload/replace event avatar    |
-| DELETE | `/api/events/[id]/avatar`   | canManageEvent | Remove event avatar            |
+| Method | Route                     | Auth           | Description                 |
+| ------ | ------------------------- | -------------- | --------------------------- |
+| GET    | `/api/events`             | admin          | List all events             |
+| POST   | `/api/events`             | admin          | Create event                |
+| PUT    | `/api/events/[id]`        | canManageEvent | Update event                |
+| DELETE | `/api/events/[id]`        | admin          | Delete event                |
+| POST   | `/api/events/[id]/avatar` | canManageEvent | Upload/replace event avatar |
+| DELETE | `/api/events/[id]/avatar` | canManageEvent | Remove event avatar         |
 
-### 7.2a Albums
+### 7.3 Albums
 
 | Method | Route              | Auth           | Description                     |
 | ------ | ------------------ | -------------- | ------------------------------- |
 | PATCH  | `/api/albums/[id]` | canManageEvent | Update album fields (read_only) |
 
-### 7.3 Media
+### 7.4 Media
 
 | Method | Route                     | Auth                         | Description                  |
 | ------ | ------------------------- | ---------------------------- | ---------------------------- |
@@ -256,7 +256,7 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 | DELETE | `/api/media/[id]`         | session_id or canManageEvent | Soft-delete                  |
 | POST   | `/api/media/[id]/restore` | canManageEvent               | Restore soft-deleted item    |
 
-### 7.4 Likes and Comments
+### 7.5 Likes and Comments
 
 | Method | Route                      | Auth       | Description                         |
 | ------ | -------------------------- | ---------- | ----------------------------------- |
@@ -265,7 +265,7 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 | GET    | `/api/media/[id]/comments` | —          | List comments                       |
 | POST   | `/api/media/[id]/comments` | session_id | Add comment                         |
 
-### 7.5 Download
+### 7.6 Download
 
 | Method | Route                       | Auth           | Description                                             |
 | ------ | --------------------------- | -------------- | ------------------------------------------------------- |
@@ -273,13 +273,13 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 
 ZIP contents are organized into per-album folders. Colliding filenames are deduplicated with a numeric suffix (`photo (2).jpg`).
 
-### 7.6 Files
+### 7.7 Files
 
 | Method | Route                  | Auth | Description                       |
 | ------ | ---------------------- | ---- | --------------------------------- |
 | GET    | `/api/files/[...path]` | —    | Serve stored file; supports Range |
 
-### 7.7 Admin — Users
+### 7.8 Admin — Users
 
 | Method | Route                          | Auth  | Description               |
 | ------ | ------------------------------ | ----- | ------------------------- |
@@ -290,7 +290,7 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 | GET    | `/api/admin/users/[id]/events` | admin | Events assigned to user   |
 | PUT    | `/api/admin/users/[id]/events` | admin | Replace event assignments |
 
-### 7.8 Admin — Backfill
+### 7.9 Admin — Backfill
 
 | Method | Route                          | Auth  | Description                  |
 | ------ | ------------------------------ | ----- | ---------------------------- |
