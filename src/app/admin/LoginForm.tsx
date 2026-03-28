@@ -16,10 +16,11 @@ export default function AdminLoginForm() {
     setError('');
     setLoading(true);
 
+    const { sessionId } = await fetch('/api/session').then(r => r.json());
     const result = await signIn('credentials', {
       email,
       password,
-      session_id: document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? '',
+      session_id: sessionId ?? '',
       redirect: false,
     });
 

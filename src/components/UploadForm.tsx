@@ -23,10 +23,11 @@ interface UploadFormProps {
   albums: Album[];
   defaultAlbumId?: number | null;
   requireName?: boolean;
+  sessionId?: string | null;
   onUploadComplete?: () => void;
 }
 
-export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireName = false, onUploadComplete }: UploadFormProps) {
+export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireName = false, sessionId = null, onUploadComplete }: UploadFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploaderName, setUploaderName] = useState('');
   const [caption, setCaption] = useState('');
@@ -189,7 +190,6 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
     if (uploaderName) localStorage.setItem(STORAGE_KEY, uploaderName);
     if (albumId) localStorage.setItem(ALBUM_STORAGE_KEY, albumId);
     else localStorage.removeItem(ALBUM_STORAGE_KEY);
-    const sessionId = document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? null;
 
     uploadSessionRef.current = {
       files,

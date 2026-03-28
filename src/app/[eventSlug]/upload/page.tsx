@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { eventTable, albumTable } from '@/lib/tables';
 import UploadForm from '@/components/UploadForm';
 
@@ -12,6 +13,9 @@ export default async function UploadPage({ params }: Props) {
 
   const event = await eventTable.findBySlug(eventSlug);
   if (!event) notFound();
+
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get('session_id')?.value ?? null;
 
   const allAlbums = await albumTable.findByEventId(event.id);
   const albums = allAlbums.filter(a => !a.read_only);
@@ -51,7 +55,7 @@ export default async function UploadPage({ params }: Props) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 sm:p-8">
-          <UploadForm eventSlug={eventSlug} albums={albums} defaultAlbumId={event.default_album_id} requireName={!!event.require_name} />
+          <UploadForm eventSlug={eventSlug} albums={albums} defaultAlbumId={event.default_album_id} requireName={!!event.require_name} sessionId={sessionId} />
         </div>
       </main>
     </div>

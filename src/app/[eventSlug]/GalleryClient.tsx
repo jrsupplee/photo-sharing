@@ -28,13 +28,6 @@ export default function GalleryClient({
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedItems, setDeletedItems] = useState<Media[]>(initialDeletedMedia);
 
-  // Set session cookie on client
-  useEffect(() => {
-    if (!document.cookie.includes('session_id=')) {
-      document.cookie = `session_id=${sessionId}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-  }, [sessionId]);
-
   useEffect(() => {
     setAllMedia(media);
   }, [media]);

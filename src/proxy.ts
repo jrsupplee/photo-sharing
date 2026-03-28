@@ -7,7 +7,7 @@ const SESSION_COOKIE_OPTIONS = {
   path: '/',
   maxAge: 31536000,
   sameSite: 'lax' as const,
-  httpOnly: false,
+  httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
 };
 
