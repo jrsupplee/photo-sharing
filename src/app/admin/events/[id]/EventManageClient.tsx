@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Event, Album } from '@/types';
 import Link from 'next/link';
+import QRCode from 'qrcode';
 
 interface Props {
   event: Event;
@@ -29,6 +30,12 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'download' | 'delete'>('general');
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
+  const [qrSvg, setQrSvg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = `${window.location.origin}/${event.slug}`;
+    QRCode.toString(url, { type: 'svg', margin: 2, width: 120 }).then(svg => setQrSvg(svg));
+  }, [event.slug]);
 
   const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false }]);
   const updateAlbum = (i: number, v: string) => {
@@ -182,6 +189,46 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
               />
               <span className="text-sm text-stone-600">Require uploader name</span>
             </label>
+            <div>
+              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-3">QR Code</label>
+              <div className="flex items-start gap-4">
+                <div className="border border-stone-100 rounded-lg p-2 shrink-0">
+                  {qrSvg ? (
+                    <div dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                  ) : (
+                    <div className="w-[120px] h-[120px] flex items-center justify-center text-stone-200">
+                      <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 justify-end pt-1">
+                  <p className="text-xs text-stone-400 font-light">Scan to open the guest gallery</p>
+                  <button
+                    type="button"
+                    disabled={!qrSvg}
+                    onClick={() => {
+                      if (!qrSvg) return;
+                      const blob = new Blob([qrSvg], { type: 'image/svg+xml' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${event.slug}-qr.svg`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-stone-200 text-stone-600 text-xs tracking-wider hover:bg-stone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download SVG
+                  </button>
+                </div>
+              </div>
+            </div>
             <SaveBar />
           </form>
         </div>
