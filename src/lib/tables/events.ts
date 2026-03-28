@@ -10,6 +10,7 @@ export interface Event {
   date_end: string | null;
   default_album_id: number | null;
   require_name: number;
+  avatar_key: string | null;
   created_at: string;
 }
 
@@ -32,6 +33,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'require_name'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN require_name TINYINT(1) NOT NULL DEFAULT 0');
       }
+      if (!(await adapter.columnExists('events', 'avatar_key'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key VARCHAR(500)');
+      }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -49,6 +53,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'require_name'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN require_name SMALLINT NOT NULL DEFAULT 0');
       }
+      if (!(await adapter.columnExists('events', 'avatar_key'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key VARCHAR(500)');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -65,6 +72,9 @@ export const eventTable = {
       }
       if (!(await adapter.columnExists('events', 'require_name'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN require_name INTEGER NOT NULL DEFAULT 0');
+      }
+      if (!(await adapter.columnExists('events', 'avatar_key'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key TEXT');
       }
     }
   },
@@ -164,6 +174,11 @@ export const eventTable = {
   async setDefaultAlbum(id: number | string, albumId: number | null): Promise<void> {
     const db = await getDb();
     await db.execute('UPDATE events SET default_album_id = ? WHERE id = ?', [albumId, id]);
+  },
+
+  async setAvatarKey(id: number | string, key: string | null): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE events SET avatar_key = ? WHERE id = ?', [key, id]);
   },
 
   async delete(id: number | string): Promise<void> {

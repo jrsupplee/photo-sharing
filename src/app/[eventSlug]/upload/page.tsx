@@ -30,7 +30,14 @@ export default async function UploadPage({ params }: Props) {
             </svg>
             <span className="hidden sm:inline">Back to Gallery</span>
           </Link>
-          <div className="text-center">
+          <div className="text-center flex items-center gap-2">
+            {event.avatar_key && (
+              <img
+                src={`/api/files/${event.avatar_key}`}
+                alt=""
+                className="w-7 h-7 rounded-full object-cover border border-stone-100"
+              />
+            )}
             <p className="text-stone-400 text-xs tracking-widest uppercase font-light">{event.name}</p>
           </div>
           <div className="w-20" />

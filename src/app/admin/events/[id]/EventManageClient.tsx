@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Event, Album } from '@/types';
 import Link from 'next/link';
 import QRCode from 'qrcode';
+import AvatarCropper from '@/components/AvatarCropper';
 
 interface Props {
   event: Event;
@@ -32,6 +33,9 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrPng, setQrPng] = useState<string | null>(null);
+  const [avatarKey, setAvatarKey] = useState<string | null>(event.avatar_key ?? null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const url = `${window.location.origin}/${event.slug}`;
@@ -91,6 +95,24 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         require_name: requireName,
       }),
     });
+  };
+
+  const handleAvatarSave = async (blob: Blob) => {
+    setUploadingAvatar(true);
+    const form = new FormData();
+    form.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+    const res = await fetch(`/api/events/${event.id}/avatar`, { method: 'POST', body: form });
+    if (res.ok) {
+      const data = await res.json();
+      setAvatarKey(data.avatar_key);
+    }
+    setUploadingAvatar(false);
+    setShowCropper(false);
+  };
+
+  const handleAvatarRemove = async () => {
+    const res = await fetch(`/api/events/${event.id}/avatar`, { method: 'DELETE' });
+    if (res.ok) setAvatarKey(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -164,6 +186,55 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       {activeTab === 'general' && (
         <div className="max-w-lg">
           <form onSubmit={handleSave} className="bg-white rounded-xl border border-stone-100 p-6 space-y-5">
+            {/* Avatar */}
+            <div>
+              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-3">Event Avatar</label>
+              {showCropper ? (
+                <div>
+                  {uploadingAvatar ? (
+                    <div className="flex items-center gap-2 text-sm text-stone-400">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Uploading…
+                    </div>
+                  ) : (
+                    <AvatarCropper onSave={handleAvatarSave} onCancel={() => setShowCropper(false)} />
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200 bg-stone-50 flex items-center justify-center shrink-0">
+                    {avatarKey ? (
+                      <img src={`/api/files/${avatarKey}`} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <svg className="w-8 h-8 text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCropper(true)}
+                      className="px-3 py-1.5 border border-stone-200 text-stone-600 text-xs tracking-wider hover:bg-stone-50 transition-colors rounded-lg"
+                    >
+                      {avatarKey ? 'Change Avatar' : 'Upload Avatar'}
+                    </button>
+                    {avatarKey && (
+                      <button
+                        type="button"
+                        onClick={handleAvatarRemove}
+                        className="text-xs text-stone-400 hover:text-rose-500 transition-colors text-left"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div>
               <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Name</label>
               <input
