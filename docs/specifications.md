@@ -77,6 +77,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | date_end         | varchar nullable    | event end date                    |
 | default_album_id | integer FK nullable | pre-selected album on upload form |
 | require_name     | boolean             | enforce uploader name at upload   |
+| avatar_key       | varchar nullable    | storage key for event avatar      |
 | created_at       | timestamp           |                                   |
 
 ### 4.3 albums
@@ -230,12 +231,20 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 
 ### 7.2 Events
 
-| Method | Route              | Auth           | Description     |
-| ------ | ------------------ | -------------- | --------------- |
-| GET    | `/api/events`      | admin          | List all events |
-| POST   | `/api/events`      | admin          | Create event    |
-| PUT    | `/api/events/[id]` | canManageEvent | Update event    |
-| DELETE | `/api/events/[id]` | admin          | Delete event    |
+| Method | Route                       | Auth           | Description                    |
+| ------ | --------------------------- | -------------- | ------------------------------ |
+| GET    | `/api/events`               | admin          | List all events                |
+| POST   | `/api/events`               | admin          | Create event                   |
+| PUT    | `/api/events/[id]`          | canManageEvent | Update event                   |
+| DELETE | `/api/events/[id]`          | admin          | Delete event                   |
+| POST   | `/api/events/[id]/avatar`   | canManageEvent | Upload/replace event avatar    |
+| DELETE | `/api/events/[id]/avatar`   | canManageEvent | Remove event avatar            |
+
+### 7.2a Albums
+
+| Method | Route              | Auth           | Description                     |
+| ------ | ------------------ | -------------- | ------------------------------- |
+| PATCH  | `/api/albums/[id]` | canManageEvent | Update album fields (read_only) |
 
 ### 7.3 Media
 
@@ -337,6 +346,8 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 - Videos display with a thumbnail and play-button overlay; clicking opens `VideoModal`
 - Album tag shown on hover
 - Admins see a Deleted tab showing soft-deleted items with a Restore button
+- When a read-only album is selected, the header Upload link is greyed out and the floating "Share a Memory" button is hidden for guests; admins are unaffected
+- Event avatar (if set) is displayed as a circle beside the event name in the sticky header
 
 ### 9.3 Lightbox and Video
 
@@ -362,6 +373,8 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 Event settings (General tab):
 
 - Name, slug (URL), date range, default album, require-name toggle
+- **Avatar**: upload a circular avatar image for the event; a canvas-based crop editor lets the admin drag to pan and scroll/pinch to zoom before saving; stored via the storage backend at `events/{slug}/avatar_{uuid}.jpg`; displayed in the gallery and upload page headers
+- **QR Code**: generates a QR code linking to the guest gallery URL; downloadable as SVG or 512×512 PNG
 
 Albums tab:
 
