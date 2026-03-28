@@ -31,10 +31,12 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'download' | 'delete'>('general');
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
   const [qrSvg, setQrSvg] = useState<string | null>(null);
+  const [qrPng, setQrPng] = useState<string | null>(null);
 
   useEffect(() => {
     const url = `${window.location.origin}/${event.slug}`;
     QRCode.toString(url, { type: 'svg', margin: 2, width: 120 }).then(svg => setQrSvg(svg));
+    QRCode.toDataURL(url, { type: 'image/png', margin: 2, width: 512 }).then(dataUrl => setQrPng(dataUrl));
   }, [event.slug]);
 
   const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false }]);
@@ -42,8 +44,15 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName(v);
     setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, name: v } : a));
   };
-  const toggleReadOnly = (i: number) => {
-    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, read_only: !a.read_only } : a));
+  const toggleReadOnly = async (i: number) => {
+    const album = albums[i];
+    const newReadOnly = !album.read_only;
+    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, read_only: newReadOnly } : a));
+    await fetch(`/api/albums/${album.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read_only: newReadOnly }),
+    });
   };
   const removeAlbum = (i: number) => {
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName('');
@@ -68,21 +77,26 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   };
   const onDragEnd = () => { dragIndex.current = null; setDragOver(null); };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await fetch(`/api/events/${event.id}`, {
+  const saveEvent = async (albumsOverride?: typeof albums) => {
+    const albumsToSave = albumsOverride ?? albums;
+    return fetch(`/api/events/${event.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
         date_start: dateStart || null,
         date_end: dateEnd || null,
-        albums: albums.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only })),
+        albums: albumsToSave.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only })),
         default_album_name: defaultAlbumName || null,
         require_name: requireName,
       }),
     });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const res = await saveEvent();
     if (res.ok) {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -225,6 +239,23 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Download SVG
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!qrPng}
+                    onClick={() => {
+                      if (!qrPng) return;
+                      const a = document.createElement('a');
+                      a.href = qrPng;
+                      a.download = `${event.slug}-qr.png`;
+                      a.click();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-stone-200 text-stone-600 text-xs tracking-wider hover:bg-stone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download PNG
                   </button>
                 </div>
               </div>

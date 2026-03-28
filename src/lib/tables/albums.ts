@@ -75,6 +75,11 @@ export const albumTable = {
     );
   },
 
+  async setReadOnly(id: number | string, readOnly: boolean): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE albums SET read_only = ? WHERE id = ?', [readOnly ? 1 : 0, id]);
+  },
+
   async findById(id: number | string): Promise<Album | undefined> {
     const db = await getDb();
     return db.queryOne<Album>('SELECT * FROM albums WHERE id = ?', [id]);
