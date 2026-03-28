@@ -6,6 +6,18 @@ import { Album } from '@/types';
 const STORAGE_KEY = 'uploader_name';
 const ALBUM_STORAGE_KEY = 'upload_album_id';
 
+interface UploadSession {
+  files: File[];
+  uploaderName: string;
+  caption: string;
+  albumId: string;
+  sessionId: string | null;
+  completed: Set<number>; // indices confirmed done (200 or 409)
+  permanentlyFailed: Set<number>; // indices with a non-transient HTTP error
+  successCount: number;
+  duplicateCount: number;
+}
+
 interface UploadFormProps {
   eventSlug: string;
   albums: Album[];
@@ -33,9 +45,12 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
     if (saved && albums.some(a => String(a.id) === saved)) setAlbumId(saved);
   }, []);
   const [uploading, setUploading] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number; duplicate: number } | null>(null);
+  const uploadSessionRef = useRef<UploadSession | null>(null);
+  const isRunningRef = useRef(false);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const pasteZoneRef = useRef<HTMLDivElement>(null);
   const PASTE_PLACEHOLDER = 'Tap here, then long-press and choose Paste';
@@ -93,6 +108,80 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const executeUpload = useCallback(async () => {
+    const session = uploadSessionRef.current;
+    if (!session || isRunningRef.current) return;
+
+    isRunningRef.current = true;
+    setUploading(true);
+    setInterrupted(false);
+
+    for (let i = 0; i < session.files.length; i++) {
+      if (session.completed.has(i) || session.permanentlyFailed.has(i)) continue;
+
+      // Pause if the tab is hidden; visibilitychange will resume us
+      if (document.hidden) {
+        isRunningRef.current = false;
+        return;
+      }
+
+      const file = session.files[i];
+      const formData = new FormData();
+      formData.append('file', file);
+      if (session.uploaderName) formData.append('uploader_name', session.uploaderName);
+      if (session.caption) formData.append('caption', session.caption);
+      if (session.albumId) formData.append('album_id', session.albumId);
+      if (session.sessionId) formData.append('session_id', session.sessionId);
+
+      try {
+        const res = await fetch(`/api/events/${eventSlug}/media`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.ok) {
+          session.successCount++;
+          session.completed.add(i);
+        } else if (res.status === 409) {
+          session.duplicateCount++;
+          session.completed.add(i);
+        } else {
+          session.permanentlyFailed.add(i);
+        }
+      } catch {
+        // Network error or browser suspension — leave index unresolved so it retries on resume
+      }
+
+      const done = session.completed.size + session.permanentlyFailed.size;
+      setProgress(Math.round((done / session.files.length) * 100));
+    }
+
+    const failedCount = session.files.length - session.successCount - session.duplicateCount;
+    isRunningRef.current = false;
+    setUploading(false);
+    setResults({ success: session.successCount, failed: failedCount, duplicate: session.duplicateCount });
+    setFiles([]);
+    setCaption('');
+    uploadSessionRef.current = null;
+    if (onUploadComplete) onUploadComplete();
+  }, [eventSlug, onUploadComplete]);
+
+  const executeUploadRef = useRef(executeUpload);
+  useEffect(() => { executeUploadRef.current = executeUpload; }, [executeUpload]);
+
+  // Resume upload automatically when the user returns to the tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && uploadSessionRef.current && !isRunningRef.current) {
+        setInterrupted(false);
+        executeUploadRef.current();
+      } else if (document.hidden && isRunningRef.current) {
+        setInterrupted(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
@@ -102,41 +191,19 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
     else localStorage.removeItem(ALBUM_STORAGE_KEY);
     const sessionId = document.cookie.match(/(?:^|; )session_id=([^;]*)/)?.[1] ?? null;
 
-    setUploading(true);
+    uploadSessionRef.current = {
+      files,
+      uploaderName,
+      caption,
+      albumId,
+      sessionId,
+      completed: new Set(),
+      permanentlyFailed: new Set(),
+      successCount: 0,
+      duplicateCount: 0,
+    };
     setProgress(0);
-    let success = 0;
-    let failed = 0;
-    let duplicate = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const formData = new FormData();
-      formData.append('file', file);
-      if (uploaderName) formData.append('uploader_name', uploaderName);
-      if (caption) formData.append('caption', caption);
-      if (albumId) formData.append('album_id', albumId);
-      if (sessionId) formData.append('session_id', sessionId);
-
-      try {
-        const res = await fetch(`/api/events/${eventSlug}/media`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (res.ok) success++;
-        else if (res.status === 409) duplicate++;
-        else failed++;
-      } catch {
-        failed++;
-      }
-
-      setProgress(Math.round(((i + 1) / files.length) * 100));
-    }
-
-    setUploading(false);
-    setResults({ success, failed, duplicate });
-    setFiles([]);
-    setCaption('');
-    if (onUploadComplete) onUploadComplete();
+    executeUpload();
   };
 
   if (results) {
@@ -299,15 +366,23 @@ export default function UploadForm({ eventSlug, albums, defaultAlbumId, requireN
       </div>
 
       {/* Progress dialog */}
-      {uploading && (
+      {(uploading || interrupted) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl px-8 py-8 mx-6 flex flex-col items-center gap-4 max-w-xs w-full">
-            <svg className="w-10 h-10 text-stone-400 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
+            {interrupted ? (
+              <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="w-10 h-10 text-stone-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            )}
             <p className="text-stone-700 text-sm font-light text-center leading-relaxed">
-              Please do not switch to another app while media is uploading.
+              {interrupted
+                ? 'Upload paused. Return to this page to continue.'
+                : 'Uploading your photos & videos\u2026'}
             </p>
             <div className="w-full space-y-1">
               <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
