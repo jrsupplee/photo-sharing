@@ -43,7 +43,8 @@ export const mediaTable = {
           storage_key VARCHAR(512) NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-          FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
+          FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL,
+          INDEX idx_media_session_id (session_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
       const mysqlCols: Record<string, string> = {
@@ -58,6 +59,7 @@ export const mediaTable = {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} ${type}`);
         }
       }
+      // InnoDB auto-creates indices for FK columns (event_id, album_id)
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS media (
@@ -89,6 +91,9 @@ export const mediaTable = {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} ${type}`);
         }
       }
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_event_id ON media (event_id)');
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_album_id ON media (album_id)');
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_session_id ON media (session_id)');
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS media (
@@ -113,6 +118,9 @@ export const mediaTable = {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} TEXT`);
         }
       }
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_event_id ON media (event_id)');
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_album_id ON media (album_id)');
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_media_session_id ON media (session_id)');
     }
   },
 

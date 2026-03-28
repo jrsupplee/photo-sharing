@@ -21,7 +21,8 @@ export const commentTable = {
           body TEXT NOT NULL,
           session_id VARCHAR(255),
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE,
+          INDEX idx_comments_session_id (session_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
     } else if (adapter.dialect === 'postgres') {
@@ -36,6 +37,7 @@ export const commentTable = {
           FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
         )
       `);
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_comments_session_id ON comments (session_id)');
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS comments (
@@ -51,6 +53,7 @@ export const commentTable = {
       if (!(await adapter.columnExists('comments', 'session_id'))) {
         await adapter.exec('ALTER TABLE comments ADD COLUMN session_id TEXT');
       }
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_comments_session_id ON comments (session_id)');
     }
   },
 

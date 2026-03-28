@@ -5,3 +5,4 @@ export { likeTable } from './likes';
 export { commentTable } from './comments';
 export { userTable } from './users';
 export { eventPermissionTable } from './event-permissions';
+export { sessionTable } from './sessions';

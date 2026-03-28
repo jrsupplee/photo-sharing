@@ -31,11 +31,14 @@ export const userTable = {
           name VARCHAR(255) NOT NULL,
           password_hash TEXT NOT NULL,
           role VARCHAR(50) NOT NULL DEFAULT 'event_manager',
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          session_id VARCHAR(255),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_users_session_id (session_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
       if (!(await adapter.columnExists('users', 'session_id'))) {
         await adapter.exec('ALTER TABLE users ADD COLUMN session_id VARCHAR(255)');
+        await adapter.exec('ALTER TABLE users ADD INDEX idx_users_session_id (session_id)');
       }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
@@ -51,6 +54,7 @@ export const userTable = {
       if (!(await adapter.columnExists('users', 'session_id'))) {
         await adapter.exec('ALTER TABLE users ADD COLUMN session_id VARCHAR(255)');
       }
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_users_session_id ON users (session_id)');
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS users (
@@ -65,6 +69,7 @@ export const userTable = {
       if (!(await adapter.columnExists('users', 'session_id'))) {
         await adapter.exec('ALTER TABLE users ADD COLUMN session_id TEXT');
       }
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_users_session_id ON users (session_id)');
     }
   },
 

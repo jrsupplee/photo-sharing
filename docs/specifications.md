@@ -64,6 +64,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | role          | varchar          | `admin` or `event_manager`          |
 | session_id    | varchar nullable | guest session linked at first login |
 | created_at    | timestamp        |                                     |
+|               | INDEX            | `session_id`                        |
 
 ### 4.2 events
 
@@ -86,6 +87,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | event_id | integer FK → events | CASCADE delete             |
 | name     | varchar             | display name               |
 | order    | integer             | display order within event |
+|          | INDEX               | `event_id`                 |
 
 ### 4.4 media
 
@@ -108,6 +110,9 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | deleted_at    | timestamp nullable           | soft-delete timestamp                 |
 | deleted_by    | varchar nullable             | session_id of deleter                 |
 | created_at    | timestamp                    |                                       |
+|               | INDEX                        | `event_id`                            |
+|               | INDEX                        | `album_id`                            |
+|               | INDEX                        | `session_id`                          |
 
 ### 4.5 comments
 
@@ -119,6 +124,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | body        | text               |                  |
 | session_id  | varchar nullable   | commenter's UUID |
 | created_at  | timestamp          |                  |
+|             | INDEX              | `session_id`     |
 
 ### 4.6 likes
 
@@ -128,6 +134,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | media_id   | integer FK → media | CASCADE delete           |
 | session_id | varchar            | UUID                     |
 |            | UNIQUE             | `(media_id, session_id)` |
+|            | INDEX              | `session_id`             |
 
 ### 4.7 event_permissions
 
@@ -136,6 +143,15 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | user_id  | integer FK → users  | CASCADE delete        |
 | event_id | integer FK → events | CASCADE delete        |
 |          | PK                  | `(user_id, event_id)` |
+
+### 4.8 sessions
+
+| Column     | Type                | Notes          |
+| ---------- | ------------------- | -------------- |
+| session_id | integer             | CASCADE delete |
+| event_id   | integer FK → events | CASCADE delete |
+| name       | varchar             |                |
+|            | INDEX               | `session_id`   |
 
 ---
 

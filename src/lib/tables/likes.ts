@@ -16,7 +16,8 @@ export const likeTable = {
           media_id INT NOT NULL,
           session_id VARCHAR(255) NOT NULL,
           UNIQUE KEY uq_like (media_id, session_id),
-          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
+          FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE,
+          INDEX idx_likes_session_id (session_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
     } else if (adapter.dialect === 'postgres') {
@@ -29,6 +30,7 @@ export const likeTable = {
           FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
         )
       `);
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_likes_session_id ON likes (session_id)');
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS likes (
@@ -39,6 +41,7 @@ export const likeTable = {
           FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE CASCADE
         )
       `);
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_likes_session_id ON likes (session_id)');
     }
   },
 

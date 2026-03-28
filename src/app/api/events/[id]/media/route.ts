@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventTable, mediaTable } from '@/lib/tables';
+import { eventTable, mediaTable, sessionTable } from '@/lib/tables';
 import { generateImageVariants } from '@/lib/imageVariants';
 import { getStorage } from '@/lib/storage/factory';
 import { v4 as uuidv4 } from 'uuid';
@@ -57,6 +57,9 @@ export async function POST(
       album_id: albumId ? parseInt(albumId) : null,
       session_id: sessionId || null,
     });
+    if (sessionId && uploaderName) {
+      await sessionTable.upsert(sessionId, event.id, uploaderName);
+    }
     return NextResponse.json(await mediaTable.findById(existing.id), { status: 200 });
   }
 
@@ -85,6 +88,10 @@ export async function POST(
     medium_key: variants?.mediumKey ?? null,
     file_hash: fileHash,
   });
+
+  if (sessionId && uploaderName) {
+    await sessionTable.upsert(sessionId, event.id, uploaderName);
+  }
 
   return NextResponse.json(media, { status: 201 });
 }

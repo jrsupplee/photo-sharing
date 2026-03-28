@@ -20,6 +20,7 @@ export const albumTable = {
           FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
+      // InnoDB auto-creates an index for the FK on event_id
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (
@@ -30,6 +31,7 @@ export const albumTable = {
           FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
         )
       `);
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_albums_event_id ON albums (event_id)');
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (
@@ -40,6 +42,7 @@ export const albumTable = {
           FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
         )
       `);
+      await adapter.exec('CREATE INDEX IF NOT EXISTS idx_albums_event_id ON albums (event_id)');
     }
   },
 
