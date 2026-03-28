@@ -110,15 +110,31 @@ export default function GalleryClient({
                 <span className="hidden sm:inline tracking-wider">Admin</span>
               </Link>
             )}
-            <Link
-              href={`/${event.slug}/upload`}
-              className="flex items-center gap-1.5 text-stone-500 hover:text-stone-700 transition-colors text-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline tracking-wider">Upload</span>
-            </Link>
+            {(() => {
+              const activeAlbumObj = activeAlbum ? albums.find(a => a.id === activeAlbum) : null;
+              const uploadBlocked = !isAdmin && !!activeAlbumObj?.read_only;
+              return uploadBlocked ? (
+                <span
+                  className="flex items-center gap-1.5 text-stone-300 text-sm cursor-not-allowed"
+                  title="This album is read-only"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline tracking-wider">Upload</span>
+                </span>
+              ) : (
+                <Link
+                  href={`/${event.slug}/upload`}
+                  className="flex items-center gap-1.5 text-stone-500 hover:text-stone-700 transition-colors text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline tracking-wider">Upload</span>
+                </Link>
+              );
+            })()}
           </div>
         </div>
       </header>
@@ -233,15 +249,21 @@ export default function GalleryClient({
       </main>
 
       {/* Floating upload button for desktop */}
-      <Link
-        href={`/${event.slug}/upload`}
-        className="fixed bottom-8 right-8 hidden sm:flex items-center gap-2 px-6 py-3 bg-stone-800 text-white text-sm tracking-widest uppercase hover:bg-stone-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        Share a Memory
-      </Link>
+      {(() => {
+        const activeAlbumObj = activeAlbum ? albums.find(a => a.id === activeAlbum) : null;
+        const uploadBlocked = !isAdmin && !!activeAlbumObj?.read_only;
+        return uploadBlocked ? null : (
+          <Link
+            href={`/${event.slug}/upload`}
+            className="fixed bottom-8 right-8 hidden sm:flex items-center gap-2 px-6 py-3 bg-stone-800 text-white text-sm tracking-widest uppercase hover:bg-stone-700 transition-all duration-300 shadow-lg hover:shadow-xl rounded-xl"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Share a Memory
+          </Link>
+        );
+      })()}
     </div>
   );
 }
