@@ -77,16 +77,16 @@ export default function GalleryClient({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div />
           <div className="text-center">
-            {event.avatar_key && (
-              <div className="flex justify-center mb-1.5">
+            <div className="flex items-center justify-center gap-2.5">
+              {event.avatar_key && (
                 <img
                   src={`/api/files/${event.avatar_key}`}
                   alt=""
-                  className="w-10 h-10 rounded-full object-cover border border-stone-100 shadow-sm"
+                  className="w-11 h-11 rounded-full object-cover border border-stone-100 shadow-sm shrink-0"
                 />
-              </div>
-            )}
-            <h1 className="font-cormorant text-xl sm:text-2xl text-stone-700 tracking-wide">{event.name}</h1>
+              )}
+              <h1 className="font-cormorant text-xl sm:text-2xl text-stone-700 tracking-wide">{event.name}</h1>
+            </div>
             {event.date_start && (
               <p className="text-stone-400 text-xs font-light tracking-widest mt-0.5">
                 {formatDate(event.date_start)}
