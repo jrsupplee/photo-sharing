@@ -1,0 +1,96 @@
+# Feature Overview
+
+## Guest Experience
+
+### Browsing the Gallery
+- Masonry photo grid with 2–4 responsive columns
+- Filter by album using tabs at the top of the page
+- Filter by uploader name
+- Click any photo or video to open a full-screen lightbox
+- Lightbox shows the caption, uploader name, like count, and comments
+
+### Uploading Media
+- Upload photos and videos from the gallery page via the **Share a Memory** button
+- Accepted formats: JPEG, PNG, GIF, WebP, HEIC/HEIF, MP4, MOV, AVI
+- Add a caption and optionally select an album
+- Drag-and-drop, file picker, or clipboard paste
+- Multiple files upload in parallel with per-file and overall progress
+- Uploader name is saved locally and auto-filled on future visits
+- Duplicate files (same SHA-256 hash) are rejected to prevent accidental re-uploads
+
+### Likes
+- Like or unlike any photo with a single tap
+- Like state persists across sessions via a browser cookie
+- Like count visible in both the grid and the lightbox
+
+### Comments
+- Add a comment to any photo from the lightbox
+- Comments are listed chronologically
+
+### Deleting Your Own Uploads
+- Guests can soft-delete media they uploaded (matched by session cookie)
+- Deleted items disappear from the gallery immediately
+- Re-uploading the same file within the same session restores it automatically
+
+---
+
+## Event Identity
+
+### Avatar
+- Each event can have a circular avatar image
+- Displayed beside the event name in the gallery and upload page headers
+
+### QR Code
+- A QR code linking to the guest gallery is available in the admin panel
+- Downloadable as SVG or 512×512 PNG for printing or sharing
+
+---
+
+## Admin / Event Manager Experience
+
+### Dashboard
+- Lists all events with photo and album counts
+- Quick link to each event's gallery and management page
+
+### Creating Events
+- Set event name, URL slug, start and end dates
+- Define albums upfront or add them later
+- Option to require uploaders to enter their name
+
+### Managing an Event (General Tab)
+- Edit name, date range, and require-name setting
+- Upload or change the event avatar with a built-in circular crop editor (drag to pan, scroll/pinch to zoom)
+- Download a QR code for the guest gallery URL
+
+### Managing Albums (Albums Tab)
+- Add, rename, reorder (drag-and-drop), and delete albums
+- Set a default album that is pre-selected on the guest upload form
+- Lock individual albums as **read-only**: guests cannot upload to locked albums; the upload controls are automatically hidden or disabled in the gallery when a locked album is selected
+
+### Downloading Media (Download Tab)
+- Download all event photos and videos as a ZIP file
+- Optionally filter by album
+- ZIP contents are organized into per-album subdirectories
+
+### Deleted Media
+- Admins see a **Deleted** tab on the public gallery page
+- Soft-deleted items can be restored with one click
+
+### Deleting an Event (Delete Tab)
+- Permanently removes the event and all associated photos, videos, albums, comments, and likes
+- Requires an explicit confirmation step
+
+### User Management
+- Create admin or event manager accounts (admin only)
+- Assign event managers to specific events
+- Remove or update accounts
+
+---
+
+## Technical Highlights
+
+- **No guest accounts required** — anonymous sessions via a browser cookie handle ownership of uploads, likes, and comments
+- **Video support** — thumbnail extracted from the first second of the video; full playback with range-request streaming
+- **Image variants** — 400px thumbnail and 1200px medium variant generated automatically at upload time
+- **Multi-database** — SQLite for simple deployments, MySQL or PostgreSQL for multi-instance production use
+- **Resumable uploads** — interrupted uploads on mobile browsers resume automatically
