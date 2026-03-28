@@ -206,7 +206,8 @@ Both variants use progressive encoding and automatic EXIF rotation. For video fi
 ### 6.2 Guest Sessions
 
 - `src/proxy.ts` assigns a UUID `session_id` cookie to all non-admin visitors on first request
-- Cookie: non-httpOnly, `SameSite=Lax`, `maxAge` 1 year
+- Cookie: `httpOnly`, `SameSite=Lax`, `maxAge` 1 year, `Secure` in production
+- Because the cookie is httpOnly, client components cannot read it directly; `GET /api/session` exposes the value to client code that needs it (e.g. the login form), and the upload page reads it server-side and passes it as a prop to `UploadForm`
 - Used for: upload ownership, likes, comments, and delete authorization
 - Not PII; no account required
 
@@ -225,9 +226,10 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 
 ### 7.1 Authentication
 
-| Method | Route                     | Auth | Description                 |
-| ------ | ------------------------- | ---- | --------------------------- |
-| POST   | `/api/auth/[...nextauth]` | —    | NextAuth sign-in / sign-out |
+| Method | Route                     | Auth | Description                                        |
+| ------ | ------------------------- | ---- | -------------------------------------------------- |
+| POST   | `/api/auth/[...nextauth]` | —    | NextAuth sign-in / sign-out                        |
+| GET    | `/api/session`            | —    | Returns `{ sessionId }` from the httpOnly cookie   |
 
 ### 7.2 Events
 
@@ -313,7 +315,8 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 
 | Route                | Description                                             |
 | -------------------- | ------------------------------------------------------- |
-| `/admin`             | Login page                                              |
+| `/admin`             | Redirects to `/admin/login`                             |
+| `/admin/login`       | Login page; password visibility toggle                  |
 | `/admin/dashboard`   | Event list with stats; image variant backfill           |
 | `/admin/events/new`  | Create event form                                       |
 | `/admin/events/[id]` | Manage event: General / Albums / Download / Delete tabs |
