@@ -24,14 +24,14 @@ npm run build
 
 Create `/etc/photo-sharing.env` (or a `.env.local` in the project root):
 
-```env
+```sh
 NODE_ENV=production
 NEXTAUTH_URL=https://yourdomain.com
-NEXTAUTH_SECRET=<random-secret>
+NEXTAUTH_SECRET=<random-secret>  # openssl rand -hex 32
 
 # Database (choose one backend)
 DB_BACKEND=sqlite
-DATABASE_PATH=/var/lib/photo-sharing/wedding.db
+DATABASE_PATH=/var/lib/photo-sharing/photos.db
 
 # DB_BACKEND=mysql
 # DB_HOST=localhost

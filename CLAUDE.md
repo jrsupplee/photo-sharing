@@ -60,19 +60,21 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Key env vars
 
-| Var | Default | Purpose |
-|-----|---------|---------|
-| `DB_BACKEND` | `sqlite` | Database backend: `sqlite`, `mysql`, or `postgres` |
-| `DATABASE_PATH` | `./data/wedding.db` | SQLite file location |
-| `DB_HOST` | `localhost` | MySQL host |
-| `DB_PORT` | `3306` | MySQL port |
-| `DB_USER` | — | MySQL username |
-| `DB_PASSWORD` | — | MySQL password |
-| `DB_NAME` | — | MySQL database name |
-| `UPLOAD_DIR` | `./uploads` | Disk storage root |
-| `STORAGE_BACKEND` | `disk` | Storage backend selector |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Seeded on first run if no users exist |
-| `NEXTAUTH_SECRET` / `NEXTAUTH_URL` | — | NextAuth config |
+| Var               | Default             | Purpose                                            |
+| ----------------- | ------------------- | -------------------------------------------------- |
+| `DB_BACKEND`      | `sqlite`            | Database backend: `sqlite`, `mysql`, or `postgres` |
+| `DATABASE_PATH`   | `./data/wedding.db` | SQLite file location                               |
+| `DB_HOST`         | `localhost`         | MySQL host                                         |
+| `DB_PORT`         | `3306`              | MySQL port                                         |
+| `DB_USER`         | —                   | MySQL username                                     |
+| `DB_PASSWORD`     | —                   | MySQL password                                     |
+| `DB_NAME`         | —                   | MySQL database name                                |
+| `UPLOAD_DIR`      | `./uploads`         | Disk storage root                                  |
+| `STORAGE_BACKEND` | `disk`              | Storage backend selector                           |
+| `ADMIN_EMAIL`     | —                   | Seeded on first run if no users exist              |
+| `ADMIN_PASSWORD`  | —                   | Seeded on first run if no users exist              |
+| `NEXTAUTH_SECRET` | —                   | NextAuth secret (`openssl rand -hex 32`)           |
+| `NEXTAUTH_URL`    | —                   | Site URL                                           |
 
 ### Route structure
 
