@@ -8,6 +8,7 @@ const SESSION_COOKIE_OPTIONS = {
   maxAge: 31536000,
   sameSite: 'lax' as const,
   httpOnly: false,
+  secure: process.env.NODE_ENV === 'production',
 };
 
 export default async function middleware(req: NextRequest) {
