@@ -8,7 +8,7 @@ import BackfillVariants from './BackfillVariants';
 
 export default async function DashboardPage() {
   const session = await getSession();
-  if (!session) redirect('/admin');
+  if (!session) redirect('/admin/login');
 
   const admin = isAdmin(session);
   const events = admin

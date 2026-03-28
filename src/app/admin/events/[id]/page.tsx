@@ -10,7 +10,7 @@ interface Props {
 
 export default async function ManageEventPage({ params }: Props) {
   const session = await getSession();
-  if (!session) redirect('/admin');
+  if (!session) redirect('/admin/login');
 
   const { id } = await params;
 

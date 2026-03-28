@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: '/admin',
+    signIn: '/admin/login',
   },
   session: {
     strategy: 'jwt',

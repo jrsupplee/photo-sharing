@@ -7,7 +7,7 @@ import UsersClient from './UsersClient';
 
 export default async function UsersPage() {
   const session = await getSession();
-  if (!session) redirect('/admin');
+  if (!session) redirect('/admin/login');
   if (!isAdmin(session)) redirect('/admin/dashboard');
 
   const users = await userTable.list();
