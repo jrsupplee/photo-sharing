@@ -27,11 +27,13 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `getDb()` in `src/lib/db/index.ts` returns a `Promise<DbAdapter>` singleton. On first call it creates the right adapter, runs each table's `create(adapter)` function in dependency order (creates table + applies column migrations), then calls `seedAdminIfNeeded(adapter)`.
 - The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite wraps `better-sqlite3` synchronously; MySQL wraps `mysql2/promise`; PostgreSQL wraps `pg` with `?`→`$n` placeholder rewriting and `RETURNING id` appended to INSERTs for last-insert-id. Transactions use pool connections for MySQL/PostgreSQL.
 - **All table methods are async** and return Promises. `db/index.ts` imports table files directly (not from the barrel) to avoid circular imports — `create()` functions accept an adapter param and do not call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(adapter)` exported from `src/lib/tables/users.ts`.
-- Core tables: `events` → `albums` → `media`, plus `likes` and `comments`.
+- Core tables: `events` → `albums` → `media`, plus `likes`, `comments`, and `sessions`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
 - `media` has a `file_hash` (SHA-256) column used for duplicate detection at upload time. If a hash matches a soft-deleted record and `deleted_by === session_id`, the item is restored instead of rejected.
-- `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form.
+- `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form, and an `avatar_key` (nullable) for the event's circular avatar image.
+- `albums` has a `read_only` boolean. Read-only albums are hidden from the guest upload form's album selector; uploading to one requires `canManageEvent` (enforced at the API layer).
+- `sessions` table records the uploader name per `(session_id, event_id)` pair, upserted whenever a named upload succeeds.
 
 ### Storage
 
@@ -45,7 +47,9 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 ### Anonymous sessions and session_id
 
-`src/proxy.ts` assigns a UUID `session_id` cookie to all non-admin visitors on first request (non-httpOnly, `SameSite=Lax`, 1-year `maxAge`). This single mechanism handles guest ownership of uploaded media, likes, and comments without login.
+`src/proxy.ts` assigns a UUID `session_id` cookie to all non-admin visitors on first request (`httpOnly`, `SameSite=Lax`, `Secure` in production, 1-year `maxAge`). This single mechanism handles guest ownership of uploaded media, likes, and comments without login.
+
+- Because the cookie is httpOnly it is not readable from JS. `GET /api/session` exposes `{ sessionId }` for client components that need it (e.g. the login form). The upload page reads it server-side via `next/headers` and passes it as a prop to `UploadForm`.
 
 - `session_id` is stored on `media` and `comments` rows at creation time.
 - `PATCH /api/media/[id]` and `DELETE /api/media/[id]` accept `session_id` (body / query param) and allow the action if it matches the stored value; admin sessions bypass this check.
@@ -73,13 +77,16 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 ### Route structure
 
 - `src/app/[eventSlug]/` — public gallery; server component fetches media (with `user_liked`) and passes to `GalleryClient` → `MediaGrid`. Admins also see a Deleted tab here (not in the manage page).
-- `src/app/[eventSlug]/upload/` — guest upload page; passes `albums` and `default_album_id` to `UploadForm`
-- `src/app/admin/` — login, dashboard, event management (`/admin/events/[id]` has General / Albums / Download / Delete tabs)
+- `src/app/[eventSlug]/upload/` — guest upload page; reads `session_id` from cookie server-side and passes `albums`, `default_album_id`, and `sessionId` to `UploadForm`
+- `src/app/admin/` — redirects to `/admin/login`; login page at `/admin/login`; dashboard, event management (`/admin/events/[id]` has General / Albums / Download / Delete tabs)
 - `src/app/api/events/[id]/media/` — POST upload, GET list; `[id]` is the event **slug**
 - `src/app/api/events/[id]/download/` — GET streams a ZIP of event media; accepts `?album_id=`; requires `canManageEvent`
 - `src/app/api/media/[id]/` — PATCH (edit name/caption), DELETE (soft-delete); auth via `session_id` match or `canManageEvent`
 - `src/app/api/media/[id]/restore/` — POST to restore a soft-deleted item; requires `canManageEvent`
 - `src/app/api/media/[id]/likes/` and `.../comments/` — per-media interactions
+- `src/app/api/albums/[id]/` — PATCH to update album fields (e.g. `read_only`); requires `canManageEvent`
+- `src/app/api/events/[id]/avatar/` — POST to upload/replace event avatar, DELETE to remove; requires `canManageEvent`
+- `src/app/api/session/` — GET returns `{ sessionId }` from the httpOnly session cookie
 
 ### MediaGrid
 
