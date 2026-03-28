@@ -17,7 +17,9 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [dateStart, setDateStart] = useState(event.date_start || '');
   const [dateEnd, setDateEnd] = useState(event.date_end || '');
   const [requireName, setRequireName] = useState(!!event.require_name);
-  const [albums, setAlbums] = useState<{ id: number; name: string }[]>(initialAlbums.map(a => ({ id: a.id, name: a.name })));
+  const [albums, setAlbums] = useState<{ id: number; name: string; read_only: boolean }[]>(
+    initialAlbums.map(a => ({ id: a.id, name: a.name, read_only: !!a.read_only }))
+  );
   const [defaultAlbumName, setDefaultAlbumName] = useState<string>(
     initialAlbums.find(a => a.id === event.default_album_id)?.name ?? ''
   );
@@ -28,10 +30,13 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [activeTab, setActiveTab] = useState<'general' | 'albums' | 'download' | 'delete'>('general');
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
 
-  const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '' }]);
+  const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false }]);
   const updateAlbum = (i: number, v: string) => {
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName(v);
     setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, name: v } : a));
+  };
+  const toggleReadOnly = (i: number) => {
+    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, read_only: !a.read_only } : a));
   };
   const removeAlbum = (i: number) => {
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName('');
@@ -66,7 +71,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         name,
         date_start: dateStart || null,
         date_end: dateEnd || null,
-        albums: albums.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i })),
+        albums: albums.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only })),
         default_album_name: defaultAlbumName || null,
         require_name: requireName,
       }),
@@ -219,6 +224,22 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                       placeholder={`Album ${index + 1}`}
                       className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
                     />
+                    <button
+                      type="button"
+                      onClick={() => toggleReadOnly(index)}
+                      title={album.read_only ? 'Read-only (guests cannot upload)' : 'Writable (guests can upload)'}
+                      className={`p-2 transition-colors ${album.read_only ? 'text-amber-500 hover:text-amber-600' : 'text-stone-300 hover:text-stone-500'}`}
+                    >
+                      {album.read_only ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 018 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
                     <button type="button" onClick={() => removeAlbum(index)} className="p-2 text-stone-300 hover:text-rose-400 transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -81,13 +81,14 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 
 ### 4.3 albums
 
-| Column   | Type                | Notes                      |
-| -------- | ------------------- | -------------------------- |
-| id       | integer PK          | auto-increment             |
-| event_id | integer FK → events | CASCADE delete             |
-| name     | varchar             | display name               |
-| order    | integer             | display order within event |
-|          | INDEX               | `event_id`                 |
+| Column    | Type                | Notes                                          |
+| --------- | ------------------- | ---------------------------------------------- |
+| id        | integer PK          | auto-increment                                 |
+| event_id  | integer FK → events | CASCADE delete                                 |
+| name      | varchar             | display name                                   |
+| order     | integer             | display order within event                     |
+| read_only | boolean             | if true, only admins/event_managers may upload |
+|           | INDEX               | `event_id`                                     |
 
 ### 4.4 media
 
@@ -318,6 +319,7 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 - Accepts image (`jpg`, `jpeg`, `png`, `gif`, `webp`, `heic`, `heif`) and video (`mp4`, `mov`, `avi`) files
 - Input methods: file picker, drag-and-drop, clipboard paste (desktop and mobile)
 - Optional fields: uploader name, caption, album (select from event albums)
+- Read-only albums are excluded from the guest album selector; uploading to a read-only album requires `canManageEvent` and returns `403` otherwise
 - If `require_name` is set on the event, uploader name is required
 - Uploader name persisted in `localStorage` (`uploader_name` key) for auto-fill
 - Files upload in parallel; per-file and overall progress shown in a modal
@@ -364,6 +366,8 @@ Event settings (General tab):
 Albums tab:
 
 - Add, rename, reorder (drag or order field), and delete albums
+- Each album has a read-only toggle; read-only albums accept uploads only from admins and event managers
+- Read-only albums are hidden from the album selector on the guest upload form
 - Deleting an album nulls `album_id` on its media (not CASCADE deleted by default)
 
 Download tab:

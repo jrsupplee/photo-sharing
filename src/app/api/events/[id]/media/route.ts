@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventTable, mediaTable, sessionTable } from '@/lib/tables';
+import { eventTable, mediaTable, albumTable, sessionTable } from '@/lib/tables';
 import { generateImageVariants } from '@/lib/imageVariants';
 import { getStorage } from '@/lib/storage/factory';
+import { getSession } from '@/lib/getSession';
+import { canManageEvent } from '@/lib/authorization';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import crypto from 'crypto';
@@ -40,6 +42,16 @@ export async function POST(
 
   if (!file) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  }
+
+  if (albumId) {
+    const album = await albumTable.findById(albumId);
+    if (album?.read_only) {
+      const session = await getSession();
+      if (!await canManageEvent(session, event.id)) {
+        return NextResponse.json({ error: 'This album is read-only.' }, { status: 403 });
+      }
+    }
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

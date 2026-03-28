@@ -6,6 +6,7 @@ export interface Album {
   event_id: number;
   name: string;
   order: number;
+  read_only: number; // 0 or 1
 }
 
 export const albumTable = {
@@ -21,6 +22,9 @@ export const albumTable = {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
       `);
       // InnoDB auto-creates an index for the FK on event_id
+      if (!(await adapter.columnExists('albums', 'read_only'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN read_only TINYINT(1) NOT NULL DEFAULT 0');
+      }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (
@@ -32,6 +36,9 @@ export const albumTable = {
         )
       `);
       await adapter.exec('CREATE INDEX IF NOT EXISTS idx_albums_event_id ON albums (event_id)');
+      if (!(await adapter.columnExists('albums', 'read_only'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN read_only SMALLINT NOT NULL DEFAULT 0');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (
@@ -43,26 +50,34 @@ export const albumTable = {
         )
       `);
       await adapter.exec('CREATE INDEX IF NOT EXISTS idx_albums_event_id ON albums (event_id)');
+      if (!(await adapter.columnExists('albums', 'read_only'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN read_only INTEGER NOT NULL DEFAULT 0');
+      }
     }
   },
 
-  async insert(album: { eventId: string | number; name: string; order: number }): Promise<number | bigint> {
+  async insert(album: { eventId: string | number; name: string; order: number; read_only?: boolean }): Promise<number | bigint> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
     const result = await db.execute(
-      `INSERT INTO albums (event_id, name, ${orderCol}) VALUES (?, ?, ?)`,
-      [album.eventId, album.name, album.order],
+      `INSERT INTO albums (event_id, name, ${orderCol}, read_only) VALUES (?, ?, ?, ?)`,
+      [album.eventId, album.name, album.order, album.read_only ? 1 : 0],
     );
     return result.lastInsertId;
   },
 
-  async update(album: { id: string | number; name: string; order: number }): Promise<void> {
+  async update(album: { id: string | number; name: string; order: number; read_only?: boolean }): Promise<void> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
     await db.execute(
-      `UPDATE albums SET name = ?, ${orderCol} = ? WHERE id = ?`,
-      [album.name, album.order, album.id],
+      `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ? WHERE id = ?`,
+      [album.name, album.order, album.read_only ? 1 : 0, album.id],
     );
+  },
+
+  async findById(id: number | string): Promise<Album | undefined> {
+    const db = await getDb();
+    return db.queryOne<Album>('SELECT * FROM albums WHERE id = ?', [id]);
   },
 
   async findByEventId(eventId: number | string): Promise<Album[]> {
@@ -76,7 +91,7 @@ export const albumTable = {
 
   async updateForEvent(
     eventId: number | string,
-    albums: { id: number; name: string; order: number }[],
+    albums: { id: number; name: string; order: number; read_only?: boolean }[],
   ): Promise<void> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
@@ -93,13 +108,13 @@ export const albumTable = {
       for (const album of albums) {
         if (album.id > 0 && existingIds.has(album.id)) {
           await tx.execute(
-            `UPDATE albums SET name = ?, ${orderCol} = ? WHERE id = ?`,
-            [album.name, album.order, album.id],
+            `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ? WHERE id = ?`,
+            [album.name, album.order, album.read_only ? 1 : 0, album.id],
           );
         } else {
           await tx.execute(
-            `INSERT INTO albums (event_id, name, ${orderCol}) VALUES (?, ?, ?)`,
-            [eventId, album.name, album.order],
+            `INSERT INTO albums (event_id, name, ${orderCol}, read_only) VALUES (?, ?, ?, ?)`,
+            [eventId, album.name, album.order, album.read_only ? 1 : 0],
           );
         }
       }

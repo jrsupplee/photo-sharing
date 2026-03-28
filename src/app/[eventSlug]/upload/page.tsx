@@ -13,7 +13,8 @@ export default async function UploadPage({ params }: Props) {
   const event = await eventTable.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = await albumTable.findByEventId(event.id);
+  const allAlbums = await albumTable.findByEventId(event.id);
+  const albums = allAlbums.filter(a => !a.read_only);
 
   return (
     <div className="min-h-screen bg-cream">
