@@ -1,5 +1,7 @@
 # Software Specifications: Wedding Photo Sharing App
 
+<!-- notion: 332e28a2-6255-8023-9680-f9a4f0567270 -->
+
 ## 1. Overview
 
 A web application for sharing photos and videos at wedding events. Guests browse galleries, upload media, and engage with likes and comments — all without creating accounts. Authenticated admins and event managers administer events, albums, and content through a protected dashboard.
