@@ -27,7 +27,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `getDb()` in `src/lib/db/index.ts` returns a `Promise<DbAdapter>` singleton. On first call it creates the right adapter, runs each table's `create(adapter)` function in dependency order (creates table + applies column migrations), then calls `seedAdminIfNeeded(adapter)`.
 - The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite wraps `better-sqlite3` synchronously; MySQL wraps `mysql2/promise`; PostgreSQL wraps `pg` with `?`→`$n` placeholder rewriting and `RETURNING id` appended to INSERTs for last-insert-id. Transactions use pool connections for MySQL/PostgreSQL.
 - **All table methods are async** and return Promises. `db/index.ts` imports table files directly (not from the barrel) to avoid circular imports — `create()` functions accept an adapter param and do not call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(adapter)` exported from `src/lib/tables/users.ts`.
-- Core tables: `events` → `albums` → `media`, plus `likes`, `comments`, and `sessions`.
+- Core tables: `events` → `albums` → `media`, plus `likes`, `comments`, `sessions`, and `qr_scans`.
 - `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
 - `media` has a `file_hash` (SHA-256) column used for duplicate detection at upload time. If a hash matches a soft-deleted record and `deleted_by === session_id`, the item is restored instead of rejected.
@@ -74,7 +74,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 | `ADMIN_EMAIL`     | —                   | Seeded on first run if no users exist              |
 | `ADMIN_PASSWORD`  | —                   | Seeded on first run if no users exist              |
 | `NEXTAUTH_SECRET` | —                   | NextAuth secret (`openssl rand -hex 32`)           |
-| `NEXTAUTH_URL`    | —                   | Site URL                                           |
+| `NEXTAUTH_URL`    | —                   | Site URL; also used as the base URL in QR codes    |
 
 ### Route structure
 
@@ -89,6 +89,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `src/app/api/albums/[id]/` — PATCH to update album fields (e.g. `read_only`); requires `canManageEvent`
 - `src/app/api/events/[id]/avatar/` — POST to upload/replace event avatar, DELETE to remove; requires `canManageEvent`
 - `src/app/api/session/` — GET returns `{ sessionId }` from the httpOnly session cookie
+- `src/app/q/[id]/` — records a QR scan in `qr_scans` then redirects to `/{slug}`; `[id]` is the event numeric ID; this is the URL encoded in the QR code
 
 ### MediaGrid
 
