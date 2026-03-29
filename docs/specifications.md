@@ -157,6 +157,14 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | name       | varchar             |                |
 |            | INDEX               | `session_id`   |
 
+### 4.9 qr_scans
+
+| Column     | Type                | Notes          |
+| ---------- | ------------------- | -------------- |
+| id         | integer PK          | auto-increment |
+| event_id   | integer FK → events | CASCADE delete |
+| scanned_at | timestamp           |                |
+
 ---
 
 ## 5. Storage
@@ -294,7 +302,13 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 | GET    | `/api/admin/users/[id]/events` | admin | Events assigned to user   |
 | PUT    | `/api/admin/users/[id]/events` | admin | Replace event assignments |
 
-### 7.9 Admin — Backfill
+### 7.9 QR Scan Tracking
+
+| Method | Route       | Auth | Description                                    |
+| ------ | ----------- | ---- | ---------------------------------------------- |
+| GET    | `/q/[id]`   | —    | Record QR scan for event, redirect to gallery  |
+
+### 7.10 Admin — Backfill
 
 | Method | Route                          | Auth  | Description                  |
 | ------ | ------------------------------ | ----- | ---------------------------- |
@@ -379,7 +393,7 @@ Event settings (General tab):
 
 - Name, slug (URL), date range, default album, require-name toggle
 - **Avatar**: upload a circular avatar image for the event; a canvas-based crop editor lets the admin drag to pan and scroll/pinch to zoom before saving; stored via the storage backend at `events/{slug}/avatar_{uuid}.jpg`; displayed in the gallery and upload page headers
-- **QR Code**: generates a QR code linking to the guest gallery URL; downloadable as SVG or 512×512 PNG
+- **QR Code**: generates a QR code at `/q/{event.id}` (short redirect that records a scan then redirects to the gallery); the event avatar is composited at the centre of the code (35% width, circular crop, white backing ring); uses H-level error correction; downloadable as SVG or 512×512 PNG; scan count displayed in the admin UI; base URL sourced from `NEXTAUTH_URL`
 
 Albums tab:
 
