@@ -39,9 +39,82 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
 
   useEffect(() => {
     const url = `${window.location.origin}/${event.slug}`;
-    QRCode.toString(url, { type: 'svg', margin: 2, width: 120 }).then(svg => setQrSvg(svg));
-    QRCode.toDataURL(url, { type: 'image/png', margin: 2, width: 512 }).then(dataUrl => setQrPng(dataUrl));
-  }, [event.slug]);
+
+    async function build() {
+      const [svgStr, pngDataUrl] = await Promise.all([
+        QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'H', margin: 2, width: 120 }),
+        QRCode.toDataURL(url, { type: 'image/png', errorCorrectionLevel: 'H', margin: 2, width: 512 }),
+      ]);
+
+      if (!avatarKey) {
+        setQrSvg(svgStr);
+        setQrPng(pngDataUrl);
+        return;
+      }
+
+      // Fetch avatar as base64 data URL
+      const avatarBlob = await fetch(`/api/files/${avatarKey}`).then(r => r.blob());
+      const avatarDataUrl = await new Promise<string>(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(avatarBlob);
+      });
+
+      // SVG: embed circular avatar at centre using viewBox coordinates
+      const viewBoxMatch = svgStr.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+      const vbW = viewBoxMatch ? parseFloat(viewBoxMatch[1]) : 120;
+      const vbH = viewBoxMatch ? parseFloat(viewBoxMatch[2]) : 120;
+      const avSize = vbW * 0.35;
+      const avX = (vbW - avSize) / 2;
+      const avY = (vbH - avSize) / 2;
+      const avR = avSize / 2;
+      const avCx = avX + avR;
+      const avCy = avY + avR;
+      const svgWithAvatar = svgStr.replace(
+        '</svg>',
+        `<defs><clipPath id="qr-av"><circle cx="${avCx}" cy="${avCy}" r="${avR}"/></clipPath></defs>` +
+        `<circle cx="${avCx}" cy="${avCy}" r="${avR * 1.15}" fill="white"/>` +
+        `<image href="${avatarDataUrl}" x="${avX}" y="${avY}" width="${avSize}" height="${avSize}" clip-path="url(#qr-av)"/></svg>`
+      );
+      setQrSvg(svgWithAvatar);
+
+      // PNG: composite avatar onto canvas
+      const qrSize = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = qrSize;
+      canvas.height = qrSize;
+      const ctx = canvas.getContext('2d')!;
+      await new Promise<void>(resolve => {
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img, 0, 0, qrSize, qrSize); resolve(); };
+        img.src = pngDataUrl;
+      });
+      const avPx = Math.round(qrSize * 0.35);
+      const avOff = Math.round((qrSize - avPx) / 2);
+      const avCxPx = avOff + avPx / 2;
+      const avCyPx = avOff + avPx / 2;
+      ctx.beginPath();
+      ctx.arc(avCxPx, avCyPx, avPx / 2 * 1.15, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      await new Promise<void>(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(avCxPx, avCyPx, avPx / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, avOff, avOff, avPx, avPx);
+          ctx.restore();
+          resolve();
+        };
+        img.src = avatarDataUrl;
+      });
+      setQrPng(canvas.toDataURL('image/png'));
+    }
+
+    build();
+  }, [event.slug, avatarKey]);
 
   const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false }]);
   const updateAlbum = (i: number, v: string) => {
