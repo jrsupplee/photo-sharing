@@ -22,6 +22,7 @@ export default async function ManageEventPage({ params }: Props) {
     qrScanTable.countByEventId(event.id),
   ]);
   const isAdmin = session.user.role === 'admin';
+  const origin = process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? '';
 
   return (
     <div className="min-h-screen bg-cream">
@@ -50,7 +51,7 @@ export default async function ManageEventPage({ params }: Props) {
         </div>
       </header>
 
-      <EventManageClient event={event} albums={albums} isAdmin={isAdmin} qrScanCount={qrScanCount} />
+      <EventManageClient event={event} albums={albums} isAdmin={isAdmin} qrScanCount={qrScanCount} origin={origin} />
     </div>
   );
 }

@@ -12,9 +12,10 @@ interface Props {
   albums: Album[];
   isAdmin: boolean;
   qrScanCount: number;
+  origin: string;
 }
 
-export default function EventManageClient({ event, albums: initialAlbums, isAdmin, qrScanCount }: Props) {
+export default function EventManageClient({ event, albums: initialAlbums, isAdmin, qrScanCount, origin }: Props) {
   const router = useRouter();
   const [name, setName] = useState(event.name);
   const [dateStart, setDateStart] = useState(event.date_start || '');
@@ -39,7 +40,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
-    const url = `${window.location.origin}/q/${event.slug}`;
+    const url = `${origin}/q/${event.id}`;
 
     async function build() {
       const [svgStr, pngDataUrl] = await Promise.all([
