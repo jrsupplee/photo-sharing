@@ -106,7 +106,7 @@ export default function NewEventForm() {
           <input
             type="date"
             value={dateStart}
-            onChange={e => setDateStart(e.target.value)}
+            onChange={e => { setDateStart(e.target.value); if (dateEnd && e.target.value > dateEnd) setDateEnd(e.target.value); }}
             className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
           />
         </div>
@@ -115,6 +115,7 @@ export default function NewEventForm() {
           <input
             type="date"
             value={dateEnd}
+            min={dateStart || undefined}
             onChange={e => setDateEnd(e.target.value)}
             className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
           />
