@@ -15,6 +15,7 @@ import { commentTable } from '../tables/comments';
 import { likeTable } from '../tables/likes';
 import { eventPermissionTable } from '../tables/event-permissions';
 import { sessionTable } from '../tables/sessions';
+import { qrScanTable } from '../tables/qr-scans';
 
 let dbPromise: Promise<DbAdapter> | null = null;
 
@@ -66,6 +67,7 @@ async function initDb(): Promise<DbAdapter> {
   await likeTable.create(adapter);
   await eventPermissionTable.create(adapter);
   await sessionTable.create(adapter);
+  await qrScanTable.create(adapter);
   await seedAdminIfNeeded(adapter);
 
   return adapter;

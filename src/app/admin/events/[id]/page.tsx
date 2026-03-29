@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
-import { eventTable, albumTable } from '@/lib/tables';
+import { eventTable, albumTable, qrScanTable } from '@/lib/tables';
 import EventManageClient from './EventManageClient';
 
 interface Props {
@@ -17,7 +17,10 @@ export default async function ManageEventPage({ params }: Props) {
   const event = await eventTable.findById(id);
   if (!event) notFound();
 
-  const albums = await albumTable.findByEventId(event.id);
+  const [albums, qrScanCount] = await Promise.all([
+    albumTable.findByEventId(event.id),
+    qrScanTable.countByEventId(event.id),
+  ]);
   const isAdmin = session.user.role === 'admin';
 
   return (
@@ -47,7 +50,7 @@ export default async function ManageEventPage({ params }: Props) {
         </div>
       </header>
 
-      <EventManageClient event={event} albums={albums} isAdmin={isAdmin} />
+      <EventManageClient event={event} albums={albums} isAdmin={isAdmin} qrScanCount={qrScanCount} />
     </div>
   );
 }

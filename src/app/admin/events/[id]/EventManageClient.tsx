@@ -11,9 +11,10 @@ interface Props {
   event: Event;
   albums: Album[];
   isAdmin: boolean;
+  qrScanCount: number;
 }
 
-export default function EventManageClient({ event, albums: initialAlbums, isAdmin }: Props) {
+export default function EventManageClient({ event, albums: initialAlbums, isAdmin, qrScanCount }: Props) {
   const router = useRouter();
   const [name, setName] = useState(event.name);
   const [dateStart, setDateStart] = useState(event.date_start || '');
@@ -38,7 +39,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
-    const url = `${window.location.origin}/${event.slug}`;
+    const url = `${window.location.origin}/q/${event.slug}`;
 
     async function build() {
       const [svgStr, pngDataUrl] = await Promise.all([
@@ -364,6 +365,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                 </div>
                 <div className="flex flex-col gap-2 justify-end pt-1">
                   <p className="text-xs text-stone-400 font-light">Scan to open the guest gallery</p>
+                  <p className="text-xs text-stone-400 font-light">{qrScanCount} {qrScanCount === 1 ? 'scan' : 'scans'}</p>
                   <button
                     type="button"
                     disabled={!qrSvg}
