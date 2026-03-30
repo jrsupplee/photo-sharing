@@ -1,7 +1,5 @@
 = Feature Overview
 
-:pdf-them: serif-theme.yml
-
 == Guest Experience
 
 === Browsing the Gallery

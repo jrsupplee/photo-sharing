@@ -2,7 +2,7 @@ ADOC_FILES := $(wildcard *.adoc)
 PDF_FILES  := $(ADOC_FILES:.adoc=.pdf)
 
 ASCIIDOCTOR_PDF := asciidoctor-pdf
-THEME_FLAGS     := -a pdf-theme-theme.yml
+THEME_FLAGS     := -a pdf-theme=serif-theme.yml
 
 .PHONY: all clean
 
