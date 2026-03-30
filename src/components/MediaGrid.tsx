@@ -36,7 +36,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
   const [newComment, setNewComment] = useState({ author_name: '', body: '' });
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [editFields, setEditFields] = useState({ uploader_name: '', caption: '', album_id: null as number | null });
+  const [editFields, setEditFields] = useState({ caption: '', album_id: null as number | null });
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -120,7 +120,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
     e.preventDefault();
     if (!currentMedia) return;
     setSavingEdit(true);
-    const body: Record<string, unknown> = { uploader_name: editFields.uploader_name, caption: editFields.caption, session_id: sessionId };
+    const body: Record<string, unknown> = { caption: editFields.caption, session_id: sessionId };
     if (isAdmin) body.album_id = editFields.album_id;
     const res = await fetch(`/api/media/${currentMedia.id}`, {
       method: 'PATCH',
@@ -291,14 +291,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                     </svg>
                   </button>
                 </div>
-                <form onSubmit={handleEditSave} style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <input
-                    type="text"
-                    placeholder="Your name"
-                    value={editFields.uploader_name}
-                    onChange={e => setEditFields(p => ({ ...p, uploader_name: e.target.value }))}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-                  />
+                <form onSubmit={handleEditSave} style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 480, margin: '0 auto', width: '100%' }}>
                   <input
                     type="text"
                     placeholder="Caption"
@@ -413,7 +406,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '', album_id: currentMedia.album_id ?? null }); setShowEdit(true); }}
+                      onClick={() => { setEditFields({ caption: currentMedia.caption || '', album_id: currentMedia.album_id ?? null }); setShowEdit(true); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
                     >
                       <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

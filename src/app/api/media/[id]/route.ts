@@ -28,7 +28,11 @@ export async function PATCH(
     await mediaTable.moveToAlbum(id, album_id === null ? null : Number(album_id));
   }
 
-  const updated = await mediaTable.update(id, uploader_name || null, caption || null);
+  const updated = await mediaTable.update(
+    id,
+    uploader_name !== undefined ? (uploader_name || null) : media.uploader_name,
+    caption !== undefined ? (caption || null) : media.caption,
+  );
   return NextResponse.json(updated);
 }
 
