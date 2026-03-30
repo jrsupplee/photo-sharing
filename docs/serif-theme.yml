@@ -1,0 +1,5 @@
+extends: default
+base:
+  font-family: Noto Serif
+heading:
+  font-family: Noto Serif
