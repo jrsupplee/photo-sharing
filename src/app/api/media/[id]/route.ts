@@ -9,7 +9,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { uploader_name, caption, session_id } = body;
+  const { uploader_name, caption, session_id, album_id } = body;
 
   const media = await mediaTable.findById(id);
   if (!media) {
@@ -19,6 +19,13 @@ export async function PATCH(
   const session = await getSession();
   if (!session && (!session_id || media.session_id !== session_id)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
+  if (album_id !== undefined) {
+    if (!await canManageEvent(session, media.event_id)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    await mediaTable.moveToAlbum(id, album_id === null ? null : Number(album_id));
   }
 
   const updated = await mediaTable.update(id, uploader_name || null, caption || null);

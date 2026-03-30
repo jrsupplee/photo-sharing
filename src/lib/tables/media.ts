@@ -303,6 +303,12 @@ export const mediaTable = {
     }
   },
 
+  async moveToAlbum(id: number | string, albumId: number | null): Promise<Media> {
+    const db = await getDb();
+    await db.execute('UPDATE media SET album_id = ? WHERE id = ?', [albumId, id]);
+    return (await db.queryOne<Media>('SELECT * FROM media WHERE id = ?', [id]))!;
+  },
+
   async delete(id: number | string): Promise<void> {
     const db = await getDb();
     await db.execute('DELETE FROM media WHERE id = ?', [id]);

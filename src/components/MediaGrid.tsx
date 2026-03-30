@@ -7,7 +7,7 @@ import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/plugins/captions.css';
-import { Media } from '@/types';
+import { Media, Album } from '@/types';
 import { Comment } from '@/types';
 import VideoModal from './VideoModal';
 
@@ -15,10 +15,11 @@ interface MediaGridProps {
   media: Media[];
   sessionId: string;
   isAdmin?: boolean;
+  albums?: Album[];
   onRestore?: (id: number) => void;
 }
 
-export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: MediaGridProps) {
+export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore }: MediaGridProps) {
   const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
   const [newComment, setNewComment] = useState({ author_name: '', body: '' });
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [editFields, setEditFields] = useState({ uploader_name: '', caption: '' });
+  const [editFields, setEditFields] = useState({ uploader_name: '', caption: '', album_id: null as number | null });
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -119,14 +120,17 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
     e.preventDefault();
     if (!currentMedia) return;
     setSavingEdit(true);
+    const body: Record<string, unknown> = { uploader_name: editFields.uploader_name, caption: editFields.caption, session_id: sessionId };
+    if (isAdmin) body.album_id = editFields.album_id;
     const res = await fetch(`/api/media/${currentMedia.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...editFields, session_id: sessionId }),
+      body: JSON.stringify(body),
     });
     if (res.ok) {
       const updated = await res.json();
-      setMediaItems(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+      const album = albums?.find(a => a.id === updated.album_id);
+      setMediaItems(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated, album_name: album?.name ?? (updated.album_id == null ? null : m.album_name) } : m));
       setShowEdit(false);
     }
     setSavingEdit(false);
@@ -301,6 +305,18 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
                     onChange={e => setEditFields(p => ({ ...p, caption: e.target.value }))}
                     style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
                   />
+                  {isAdmin && albums && albums.length > 0 && (
+                    <select
+                      value={editFields.album_id ?? ''}
+                      onChange={e => setEditFields(p => ({ ...p, album_id: e.target.value === '' ? null : Number(e.target.value) }))}
+                      style={{ width: '100%', background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '0.5rem 0.75rem', color: editFields.album_id == null ? 'rgba(255,255,255,0.3)' : 'white', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
+                    >
+                      <option value="">No album</option>
+                      {albums.map(a => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                    </select>
+                  )}
                   <button
                     type="submit"
                     disabled={savingEdit}
@@ -396,7 +412,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, onRestore }: Medi
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '' }); setShowEdit(true); }}
+                      onClick={() => { setEditFields({ uploader_name: currentMedia.uploader_name || '', caption: currentMedia.caption || '', album_id: currentMedia.album_id ?? null }); setShowEdit(true); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}
                     >
                       <svg style={{ width: 28, height: 28 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

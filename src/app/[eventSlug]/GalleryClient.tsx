@@ -236,7 +236,7 @@ export default function GalleryClient({
                 Share
               </Link>
             </div>
-            <MediaGrid media={displayedMedia} sessionId={sessionId} isAdmin={isAdmin} />
+            <MediaGrid media={displayedMedia} sessionId={sessionId} isAdmin={isAdmin} albums={isAdmin ? albums : undefined} />
           </>
         )}
       </main>
