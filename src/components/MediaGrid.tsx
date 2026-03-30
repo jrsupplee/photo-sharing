@@ -248,6 +248,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
           captionsTitle: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' },
           captionsDescription: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)' },
+          captionsDescriptionContainer: { bottom: '4.5rem', paddingBottom: '0.5rem' },
         }}
         render={{
           controls: () => {
