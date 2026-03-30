@@ -1,5 +1,11 @@
 extends: default
 base:
   font-family: Noto Serif
+title-page:
+  title-font-size: 18
 heading:
   font-family: Noto Serif
+  h1-font-size: 18
+  h2-font-size: 16
+  h3-font-size: 14
+  h4-font-size: 12

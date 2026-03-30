@@ -1,8 +1,6 @@
 = Feature Overview
 
-++++
-<style>body { font-family: serif; }</style>
-++++
+:pdf-them: serif-theme.yml
 
 == Guest Experience
 
