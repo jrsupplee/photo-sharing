@@ -1,5 +1,9 @@
 = Feature Overview
 
+++++
+<style>body { font-family: serif; }</style>
+++++
+
 == Guest Experience
 
 === Browsing the Gallery
@@ -33,7 +37,6 @@
 * Deleted items disappear from the gallery immediately
 * Re-uploading the same file within the same session restores it automatically
 
-'''
 
 == Event Identity
 
@@ -45,7 +48,6 @@
 * A QR code linking to the guest gallery is available in the admin panel
 * Downloadable as SVG or 512×512 PNG for printing or sharing
 
-'''
 
 == Admin / Event Manager Experience
 
@@ -90,7 +92,6 @@
 * Assign event managers to specific events
 * Remove or update accounts
 
-'''
 
 == Technical Highlights
 
