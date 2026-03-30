@@ -73,8 +73,9 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 | `STORAGE_BACKEND` | `disk`              | Storage backend selector                           |
 | `ADMIN_EMAIL`     | —                   | Seeded on first run if no users exist              |
 | `ADMIN_PASSWORD`  | —                   | Seeded on first run if no users exist              |
-| `NEXTAUTH_SECRET` | —                   | NextAuth secret (`openssl rand -hex 32`)           |
-| `NEXTAUTH_URL`    | —                   | Site URL; also used as the base URL in QR codes    |
+| `NEXTAUTH_SECRET`          | —    | NextAuth secret (`openssl rand -hex 32`)                              |
+| `NEXTAUTH_URL`             | —    | Site URL; also used as the base URL in QR codes                       |
+| `GALLERY_REFRESH_INTERVAL` | —    | Auto-refresh the guest gallery every N seconds (omit to disable)      |
 
 ### Route structure
 

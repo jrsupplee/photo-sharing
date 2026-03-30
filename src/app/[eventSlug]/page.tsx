@@ -29,6 +29,10 @@ export default async function EventPage({ params }: Props) {
   const session = await getSession();
   const deletedMedia = session ? await mediaTable.findDeletedByEventId(event.id) : [];
 
+  const refreshInterval = process.env.GALLERY_REFRESH_INTERVAL
+    ? parseInt(process.env.GALLERY_REFRESH_INTERVAL, 10) * 1000
+    : null;
+
   return (
     <GalleryClient
       event={event}
@@ -37,6 +41,7 @@ export default async function EventPage({ params }: Props) {
       sessionId={sessionId}
       isAdmin={!!session}
       deletedMedia={deletedMedia}
+      refreshInterval={refreshInterval}
     />
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Event, Album, Media } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
@@ -12,6 +13,7 @@ interface GalleryClientProps {
   sessionId: string;
   isAdmin?: boolean;
   deletedMedia?: Media[];
+  refreshInterval?: number | null;
 }
 
 export default function GalleryClient({
@@ -21,6 +23,7 @@ export default function GalleryClient({
   sessionId,
   isAdmin,
   deletedMedia: initialDeletedMedia = [],
+  refreshInterval,
 }: GalleryClientProps) {
   const [allMedia, setAllMedia] = useState<Media[]>(media);
   const [activeAlbum, setActiveAlbum] = useState<number | null>(null);
@@ -31,6 +34,13 @@ export default function GalleryClient({
   useEffect(() => {
     setAllMedia(media);
   }, [media]);
+
+  const router = useRouter();
+  useEffect(() => {
+    if (!refreshInterval) return;
+    const id = setInterval(() => router.refresh(), refreshInterval);
+    return () => clearInterval(id);
+  }, [refreshInterval, router]);
 
   const handleAlbumChange = (albumId: number | null) => {
     setActiveAlbum(albumId);
