@@ -8,6 +8,7 @@
 - Filter by uploader name
 - Click any photo or video to open a full-screen lightbox
 - Lightbox shows the caption, uploader name, like count, and comments
+- Guests can edit the caption on their own uploads from the lightbox
 
 ### Uploading Media
 - Upload photos and videos from the gallery page via the **Share a Memory** button
@@ -71,6 +72,10 @@
 - Download all event photos and videos as a ZIP file
 - Optionally filter by album
 - ZIP contents are organized into per-album subdirectories
+
+### Editing Media
+- Admins can edit the caption and album assignment for any photo from the lightbox
+- Album selector appears inline in the edit panel when the event has multiple albums
 
 ### Deleted Media
 - Admins see a **Deleted** tab on the public gallery page
