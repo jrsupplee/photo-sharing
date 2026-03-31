@@ -75,31 +75,32 @@ Make sure `NEXTAUTH_URL` is set to your public URL in production.
 
 ## Database backends
 
-| Backend | Driver | Default port | When to use |
-|---------|--------|--------------|-------------|
-| `sqlite` (default) | `better-sqlite3` | — | Single-server deployments, easy setup |
-| `mysql` | `mysql2` | 3306 | Multi-instance or managed MySQL deployments |
-| `postgres` | `pg` | 5432 | Multi-instance or managed PostgreSQL deployments |
+| Backend            | Driver           | Default port | When to use                                      |
+| ------------------ | ---------------- | ------------ | ------------------------------------------------ |
+| `sqlite` (default) | `better-sqlite3` | —            | Single-server deployments, easy setup            |
+| `mysql`            | `mysql2`         | 3306         | Multi-instance or managed MySQL deployments      |
+| `postgres`         | `pg`             | 5432         | Multi-instance or managed PostgreSQL deployments |
 
 Switch backends by setting `DB_BACKEND` in your environment. All three use the same schema — tables are created automatically on first run.
 
 ## Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NEXTAUTH_SECRET` | — | NextAuth signing secret (required) |
-| `NEXTAUTH_URL` | — | App base URL (required) |
-| `ADMIN_EMAIL` | — | Admin email seeded on first run |
-| `ADMIN_PASSWORD` | — | Admin password seeded on first run |
-| `DB_BACKEND` | `sqlite` | Database backend: `sqlite`, `mysql`, or `postgres` |
-| `DATABASE_PATH` | `./data/wedding.db` | SQLite file path |
-| `DB_HOST` | `localhost` | MySQL host |
-| `DB_PORT` | `3306` | MySQL port |
-| `DB_USER` | — | MySQL username |
-| `DB_PASSWORD` | — | MySQL password |
-| `DB_NAME` | — | MySQL database name |
-| `UPLOAD_DIR` | `./uploads` | Directory for uploaded files |
-| `STORAGE_BACKEND` | `disk` | Storage backend (`disk`) |
+| Variable                   | Default             | Description                                                      |
+| -------------------------- | ------------------- | ---------------------------------------------------------------- |
+| `NEXTAUTH_SECRET`          | —                   | NextAuth signing secret (required)                               |
+| `NEXTAUTH_URL`             | —                   | App base URL (required)                                          |
+| `ADMIN_EMAIL`              | —                   | Admin email seeded on first run                                  |
+| `ADMIN_PASSWORD`           | —                   | Admin password seeded on first run                               |
+| `DB_BACKEND`               | `sqlite`            | Database backend: `sqlite`, `mysql`, or `postgres`               |
+| `DATABASE_PATH`            | `./data/wedding.db` | SQLite file path                                                 |
+| `DB_HOST`                  | `localhost`         | MySQL host                                                       |
+| `DB_PORT`                  | `3306`              | MySQL port                                                       |
+| `DB_USER`                  | —                   | MySQL username                                                   |
+| `DB_PASSWORD`              | —                   | MySQL password                                                   |
+| `DB_NAME`                  | —                   | MySQL database name                                              |
+| `UPLOAD_DIR`               | `./uploads`         | Directory for uploaded files                                     |
+| `STORAGE_BACKEND`          | `disk`              | Storage backend (`disk`)                                         |
+| `GALLERY_REFRESH_INTERVAL` | 30                  | Auto-refresh the guest gallery every N seconds (omit to disable) |
 
 ## Project structure
 

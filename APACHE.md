@@ -53,6 +53,9 @@ UPLOAD_DIR=/var/lib/photo-sharing/uploads
 # Seed admin on first run
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=changeme
+
+# Optional: auto-refresh the guest gallery every N seconds
+# GALLERY_REFRESH_INTERVAL=30
 ```
 
 Create required directories and set permissions:
