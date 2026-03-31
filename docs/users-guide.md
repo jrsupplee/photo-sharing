@@ -1,0 +1,244 @@
+# User's Guide
+
+This guide covers both guest and administrator use of the wedding photo sharing app.
+
+---
+
+## System Overview
+
+The app is a web-based photo and video sharing platform designed for wedding events. Guests browse a gallery, upload their own photos and videos, and react to others' posts — all without creating accounts. Administrators and event managers run events and manage content through a protected dashboard.
+
+**Two audiences:**
+
+- **Guests** — anyone with the event URL. No login required.
+- **Admins / Event Managers** — authenticated users who manage events, albums, and media.
+
+---
+
+## Guest Experience
+
+### Accessing the Gallery
+
+Navigate to your event's URL (e.g. `https://example.com/your-event`). The gallery displays all shared photos and videos in a responsive masonry grid. The event name, optional event avatar, and date range appear in the sticky header at the top.
+
+If the site hosts multiple events, the home page (`/`) lists them all.
+
+### Browsing and Filtering
+
+- **Album tabs** — if the event has multiple albums, tabs appear at the top of the gallery. Click a tab to filter the grid to that album.
+- **Uploader filter** — a dropdown lets you filter the grid to photos from a specific person.
+- **Auto-refresh** — if enabled by the administrator, the gallery automatically refreshes at a set interval to show newly uploaded media.
+
+### Lightbox View
+
+Click any photo or video to open the full-screen lightbox. The lightbox shows:
+
+- The full-size image or video player
+- Caption and uploader name
+- Like count and like toggle
+- Comment panel
+
+Navigate between items with the arrow buttons or keyboard arrow keys. Press Escape to close.
+
+### Liking Photos
+
+Click the heart icon on any photo or video to like it. Click again to unlike. Your like state is saved via a browser cookie and persists across visits.
+
+### Commenting
+
+Open any item in the lightbox and click the comment icon to open the comment panel. Enter your name and comment, then submit. Comments are listed chronologically. There is no edit or delete for comments.
+
+### Uploading Photos and Videos
+
+Click **Share a Memory** (floating button) or the **Upload** link in the header to go to the upload page.
+
+**Accepted file types:** JPEG, PNG, GIF, WebP, HEIC/HEIF images; MP4, MOV, AVI videos.
+
+**Input methods:**
+- Click the upload area to open a file picker
+- Drag and drop files onto the upload area
+- Paste from clipboard (Ctrl+V / Cmd+V on desktop; long-press paste on mobile)
+
+**Upload form fields:**
+
+| Field | Notes |
+|---|---|
+| Uploader name | Optional unless the event requires it. Saved locally and auto-filled on future visits. |
+| Caption | Optional description for your upload. |
+| Album | Shown when the event has multiple albums. Required when visible. |
+
+You can select multiple files at once. A progress dialog shows per-file and overall upload progress. After uploading, a summary shows how many succeeded, how many were duplicates, and any failures.
+
+**Note:** If you upload the same file twice, it is detected as a duplicate and skipped.
+
+### Editing Your Own Uploads
+
+Open one of your own uploads in the lightbox. An edit icon (pencil) appears on items you uploaded. You can update the uploader name and caption from the lightbox. Album reassignment is also available if the event has multiple albums.
+
+### Deleting Your Own Uploads
+
+Open your upload in the lightbox and click the delete (trash) icon. A confirmation dialog appears before the item is removed. Deleted items disappear from the guest gallery immediately. Administrators can still see and restore deleted items.
+
+If you re-upload the same file in the same browser session, it is automatically restored rather than rejected as a duplicate.
+
+---
+
+## Administrator and Event Manager Experience
+
+### Logging In
+
+Go to `/admin` (redirects to `/admin/login`). Enter your email address and password. The dashboard lists all events you have access to.
+
+**Roles:**
+
+| Role | Access |
+|---|---|
+| Admin | All events; create/delete events; manage users |
+| Event Manager | Only events explicitly assigned to them; no event creation or deletion |
+
+### Dashboard
+
+The dashboard lists events with photo and album counts. From here you can:
+
+- Open the guest gallery for any event
+- Go to the event management page
+- Access the image variant backfill tool (admin only)
+
+### Creating an Event (Admin Only)
+
+Click **New Event** on the dashboard. Fill in:
+
+- **Name** — display name shown in the gallery
+- **Slug** — the URL path segment (e.g. `smith-wedding` → `/smith-wedding`)
+- **Start and end dates** — shown in the gallery header
+- **Require uploader name** — if checked, the name field on the upload form is mandatory
+- **Albums** — add one or more albums upfront, or add them later
+
+### Managing an Event
+
+Click **Manage** on any event card to open the event management page. It has four tabs.
+
+#### General Tab
+
+- Edit event name, slug, date range, and the require-name setting.
+- **Default album** — pre-selects an album on the guest upload form.
+- **Avatar** — upload a circular avatar image for the event. A built-in crop editor lets you pan and zoom before saving. The avatar appears beside the event name in the gallery header, upload page, and at the centre of the QR code.
+- **QR Code** — a QR code linking to the guest gallery is generated automatically. It can be downloaded as an SVG or a 512×512 PNG for printing or digital sharing. The number of times the QR code has been scanned is displayed.
+
+#### Albums Tab
+
+Manage the event's albums:
+
+- **Add album** — enter a name and click Add.
+- **Rename** — edit the name field inline and save.
+- **Reorder** — drag albums into the desired order. The order is reflected in the gallery tabs.
+- **Default** — mark one album as the default for the upload form.
+- **Delete** — remove an album. Media in that album is not deleted; it becomes unassigned.
+
+Each album has three restriction options:
+
+| Option | Effect on guests |
+|---|---|
+| **Read-only** | Guests cannot upload to this album. The upload controls are hidden or disabled when a read-only album is selected. Admins and event managers are unaffected. |
+| **Available from** | Guests cannot upload before the specified date. The album is excluded from the guest upload form until that date arrives. Admins and event managers are unaffected. |
+| **Hidden** | The album tab is not shown to guests in the gallery or upload form. Admins and event managers see it with an eye-slash indicator. |
+
+Read-only, date-restricted, and hidden albums are all excluded from the guest upload form's album selector.
+
+#### Download Tab
+
+Download all event photos and videos as a ZIP file. Use the album selector to download a single album instead of everything. ZIP contents are organized into per-album subdirectories. Duplicate filenames are automatically suffixed (e.g. `photo (2).jpg`).
+
+#### Delete Tab (Admin Only)
+
+Permanently deletes the entire event, including all albums, photos, videos, comments, likes, and permissions. An explicit confirmation is required. This action cannot be undone.
+
+### Managing Media
+
+#### Editing Any Item
+
+Admins and event managers can edit the caption and album assignment of any photo or video from the lightbox, regardless of who uploaded it. Open the item in the lightbox and click the edit icon.
+
+#### Deleting Any Item
+
+Admins and event managers can soft-delete any photo or video from the lightbox. Deleted items are hidden from guests but remain recoverable.
+
+#### Restoring Deleted Items
+
+Open the event gallery while logged in as an admin or event manager. A **Deleted** tab appears showing all soft-deleted items for that event. Click **Restore** on any item to return it to the gallery.
+
+### Managing Users (Admin Only)
+
+Go to `/admin/users` from the dashboard. From here you can:
+
+- **Create accounts** — set email, display name, password, and role (`admin` or `event_manager`).
+- **Edit accounts** — update name, email, password, or role.
+- **Assign events** — for `event_manager` accounts, choose which events they can manage.
+- **Delete accounts** — remove a user. You cannot delete your own account.
+
+---
+
+## Album Restriction Reference
+
+| Restriction | Guest sees album tab | Guest can upload | Admin/Manager affected |
+|---|---|---|---|
+| None | Yes | Yes | No |
+| Read-only | Yes | No | No |
+| Available from (future date) | No | No | No |
+| Available from (date passed) | Yes | Yes | No |
+| Hidden | No | No | No |
+| Read-only + Hidden | No | No | No |
+
+Restrictions can be combined. An album can be hidden *and* read-only simultaneously.
+
+---
+
+## How Sessions Work
+
+No guest accounts are required. When a visitor first accesses the site, a unique session ID is assigned via a browser cookie (valid for one year). This session ID tracks:
+
+- Which uploads belong to you (so you can edit or delete your own photos)
+- Your likes
+- Your comment history
+
+Because the cookie is browser-based, switching browsers or clearing cookies means the new session won't have ownership of previous uploads. The content itself is still visible; you just won't see the edit/delete controls for items from the old session.
+
+Authenticated admins and event managers have a persistent session ID tied to their account. Likes and upload ownership survive log-out and log-in.
+
+---
+
+## QR Code Distribution
+
+Each event has a unique QR code that links guests directly to the gallery. When a guest scans the code, the scan is recorded and they are redirected to the event gallery. The admin panel shows the total scan count for each event.
+
+Recommended uses:
+- Print on table cards or signage at the venue
+- Share digitally in invitations or messaging apps
+- Display on a screen at the event
+
+Download the QR code as SVG (for high-quality print) or PNG (for digital use) from the General tab of the event management page.
+
+---
+
+## Environment Configuration (Administrators / Operators)
+
+The following environment variables control app behaviour:
+
+| Variable | Default | Description |
+|---|---|---|
+| `NEXTAUTH_SECRET` | — | Required. JWT signing secret. |
+| `NEXTAUTH_URL` | — | Required. App base URL; used in QR codes. |
+| `ADMIN_EMAIL` | — | Email for the initial admin account seeded on first run. |
+| `ADMIN_PASSWORD` | — | Password for the initial admin account. |
+| `DB_BACKEND` | `sqlite` | Database: `sqlite`, `mysql`, or `postgres`. |
+| `DATABASE_PATH` | `./data/wedding.db` | SQLite file location. |
+| `DB_HOST` | `localhost` | MySQL or PostgreSQL host. |
+| `DB_PORT` | `3306` | MySQL or PostgreSQL port. |
+| `DB_USER` | — | MySQL or PostgreSQL username. |
+| `DB_PASSWORD` | — | MySQL or PostgreSQL password. |
+| `DB_NAME` | — | MySQL or PostgreSQL database name. |
+| `UPLOAD_DIR` | `./uploads` | Directory where uploaded files are stored. |
+| `STORAGE_BACKEND` | `disk` | Storage backend. Currently only `disk` is supported. |
+| `GALLERY_REFRESH_INTERVAL` | — | Auto-refresh the guest gallery every N seconds. Omit to disable. |
+
+For multi-instance production deployments, use MySQL or PostgreSQL. SQLite is not safe for concurrent writes across multiple processes.

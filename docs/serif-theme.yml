@@ -1,8 +1,10 @@
 extends: default
 base:
   font-family: Noto Serif
+preamble:
+  font-size: 12 # $base-font-size
 title-page:
-  title-font-size: 18
+  title-font-size: 12
 heading:
   font-family: Noto Serif
   h1-font-size: 18
