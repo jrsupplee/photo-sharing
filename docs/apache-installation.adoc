@@ -1,30 +1,33 @@
-# Deploying on Apache
+= Deploying on Apache
 
 Apache acts as a reverse proxy in front of a Node.js process running the Next.js app.
 
-## Prerequisites
+== Prerequisites
 
-- Node.js 18+
-- Apache 2.4+ with `mod_proxy`, `mod_proxy_http`, and `mod_rewrite` enabled
-- (Optional) `mod_ssl` for HTTPS
+* Node.js 18+
+* Apache 2.4+ with `mod_proxy`, `mod_proxy_http`, and `mod_rewrite` enabled
+* (Optional) `mod_ssl` for HTTPS
 
-```bash
+[source,bash]
+----
 sudo a2enmod proxy proxy_http rewrite headers
 sudo systemctl restart apache2
-```
+----
 
-## 1. Build the app
+== 1. Build the app
 
-```bash
+[source,bash]
+----
 npm ci
 npm run build
-```
+----
 
-## 2. Configure environment variables
+== 2. Configure environment variables
 
 Create `/etc/photo-sharing.env` (or a `.env.local` in the project root):
 
-```sh
+[source,sh]
+----
 NODE_ENV=production
 NEXTAUTH_URL=https://yourdomain.com
 NEXTAUTH_SECRET=<random-secret>  # openssl rand -hex 32
@@ -56,32 +59,35 @@ ADMIN_PASSWORD=changeme
 
 # Optional: auto-refresh the guest gallery every N seconds
 # GALLERY_REFRESH_INTERVAL=30
-```
+----
 
 Create required directories and set permissions:
 
-```bash
+[source,bash]
+----
 sudo mkdir -p /var/lib/photo-sharing/uploads
 sudo chown -R www-data:www-data /var/lib/photo-sharing
-```
+----
 
-## 3. Run the app
+== 3. Run the app
 
 The app listens on `http://localhost:3000` by default. To change the port, set `PORT=XXXX` in the environment file and update the Apache config below.
 
-Choose either **pm2** (recommended) or **systemd**.
+Choose either *pm2* (recommended) or *systemd*.
 
-### Option A — pm2
+=== Option A — pm2
 
 Install `pm2` globally:
 
-```bash
+[source,bash]
+----
 sudo npm install -g pm2
-```
+----
 
 Create `ecosystem.config.js` in the project root:
 
-```js
+[source,js]
+----
 module.exports = {
   apps: [
     {
@@ -99,9 +105,10 @@ module.exports = {
     },
   ],
 };
-```
+----
 
-```bash
+[source,bash]
+----
 sudo mkdir -p /var/log/photo-sharing
 sudo chown www-data:www-data /var/log/photo-sharing
 
@@ -112,22 +119,24 @@ sudo -u www-data pm2 save
 # Generate and enable a systemd unit so pm2 starts on boot
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u www-data --hp /var/lib/www-data
 sudo systemctl enable pm2-www-data
-```
+----
 
 Common `pm2` commands:
 
-```bash
+[source,bash]
+----
 sudo -u www-data pm2 status              # show running processes
 sudo -u www-data pm2 logs photo-sharing  # tail logs
 sudo -u www-data pm2 restart photo-sharing
 sudo -u www-data pm2 stop photo-sharing
-```
+----
 
-### Option B — systemd
+=== Option B — systemd
 
 Create `/etc/systemd/system/photo-sharing.service`:
 
-```ini
+[source,ini]
+----
 [Unit]
 Description=Photo Sharing (Next.js)
 After=network.target
@@ -143,21 +152,23 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-```
+----
 
 Enable and start:
 
-```bash
+[source,bash]
+----
 sudo systemctl daemon-reload
 sudo systemctl enable --now photo-sharing
 sudo systemctl status photo-sharing
-```
+----
 
-## 4. Apache virtual host
+== 4. Apache virtual host
 
 Create `/etc/apache2/sites-available/photo-sharing.conf`:
 
-```apache
+[source,apache]
+----
 <VirtualHost *:80>
     ServerName yourdomain.com
 
@@ -196,23 +207,25 @@ Create `/etc/apache2/sites-available/photo-sharing.conf`:
     ErrorLog  ${APACHE_LOG_DIR}/photo-sharing-error.log
     CustomLog ${APACHE_LOG_DIR}/photo-sharing-access.log combined
 </VirtualHost>
-```
+----
 
 Enable the site:
 
-```bash
+[source,bash]
+----
 sudo a2ensite photo-sharing
 sudo apachectl configtest
 sudo systemctl reload apache2
-```
+----
 
-## 5. Serving uploaded files
+== 5. Serving uploaded files
 
 Uploaded files are served by the Next.js route `GET /api/files/[...path]`. No special Apache configuration is needed — the proxy handles these requests.
 
 If you want Apache to serve static uploads directly (bypassing Node.js for better performance), point Apache at `UPLOAD_DIR` and exclude that path from proxying:
 
-```apache
+[source,apache]
+----
 Alias /api/files /var/lib/photo-sharing/uploads
 
 <Directory /var/lib/photo-sharing/uploads>
@@ -224,11 +237,12 @@ Alias /api/files /var/lib/photo-sharing/uploads
 ProxyPass        /api/files !
 ProxyPass        / http://localhost:3000/
 ProxyPassReverse / http://localhost:3000/
-```
+----
 
-## 6. Deploying updates
+== 6. Deploying updates
 
-```bash
+[source,bash]
+----
 git pull
 npm ci
 npm run build
@@ -238,4 +252,4 @@ sudo -u www-data pm2 restart photo-sharing
 
 # systemd
 sudo systemctl restart photo-sharing
-```
+----
