@@ -15,7 +15,7 @@ export default async function EventPage({ params }: Props) {
   const event = await eventTable.findBySlug(eventSlug);
   if (!event) notFound();
 
-  const albums = await albumTable.findByEventId(event.id);
+  const allAlbums = await albumTable.findByEventId(event.id);
 
   // Get or create session ID for likes
   const cookieStore = await cookies();
@@ -34,6 +34,8 @@ export default async function EventPage({ params }: Props) {
   const deletedMedia = session
     ? await mediaTable.findDeletedByEventId(event.id)
     : [];
+
+  const albums = session ? allAlbums : allAlbums.filter(a => !a.hidden);
 
   const refreshInterval = process.env.GALLERY_REFRESH_INTERVAL
     ? parseInt(process.env.GALLERY_REFRESH_INTERVAL, 10) * 1000

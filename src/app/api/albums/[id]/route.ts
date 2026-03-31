@@ -23,6 +23,9 @@ export async function PATCH(
   if (typeof body.read_only === 'boolean') {
     await albumTable.setReadOnly(id, body.read_only);
   }
+  if (typeof body.hidden === 'boolean') {
+    await albumTable.setHidden(id, body.hidden);
+  }
 
   return NextResponse.json(await albumTable.findById(id));
 }

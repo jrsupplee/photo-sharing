@@ -18,7 +18,12 @@ export default async function UploadPage({ params }: Props) {
   const sessionId = cookieStore.get('session_id')?.value ?? null;
 
   const allAlbums = await albumTable.findByEventId(event.id);
-  const albums = allAlbums.filter(a => !a.read_only);
+  const today = new Date().toISOString().split('T')[0];
+  const albums = allAlbums.filter(a =>
+    !a.read_only &&
+    !a.hidden &&
+    (!a.available_from || a.available_from <= today)
+  );
 
   return (
     <div className="min-h-screen bg-cream">

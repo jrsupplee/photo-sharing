@@ -7,6 +7,8 @@ export interface Album {
   name: string;
   order: number;
   read_only: number; // 0 or 1
+  available_from: string | null;
+  hidden: number; // 0 or 1
 }
 
 export const albumTable = {
@@ -25,6 +27,12 @@ export const albumTable = {
       if (!(await adapter.columnExists('albums', 'read_only'))) {
         await adapter.exec('ALTER TABLE albums ADD COLUMN read_only TINYINT(1) NOT NULL DEFAULT 0');
       }
+      if (!(await adapter.columnExists('albums', 'available_from'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN available_from DATE NULL');
+      }
+      if (!(await adapter.columnExists('albums', 'hidden'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN hidden TINYINT(1) NOT NULL DEFAULT 0');
+      }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS albums (
@@ -38,6 +46,12 @@ export const albumTable = {
       await adapter.exec('CREATE INDEX IF NOT EXISTS idx_albums_event_id ON albums (event_id)');
       if (!(await adapter.columnExists('albums', 'read_only'))) {
         await adapter.exec('ALTER TABLE albums ADD COLUMN read_only SMALLINT NOT NULL DEFAULT 0');
+      }
+      if (!(await adapter.columnExists('albums', 'available_from'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN available_from DATE NULL');
+      }
+      if (!(await adapter.columnExists('albums', 'hidden'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN hidden SMALLINT NOT NULL DEFAULT 0');
       }
     } else {
       await adapter.exec(`
@@ -53,31 +67,42 @@ export const albumTable = {
       if (!(await adapter.columnExists('albums', 'read_only'))) {
         await adapter.exec('ALTER TABLE albums ADD COLUMN read_only INTEGER NOT NULL DEFAULT 0');
       }
+      if (!(await adapter.columnExists('albums', 'available_from'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN available_from TEXT NULL');
+      }
+      if (!(await adapter.columnExists('albums', 'hidden'))) {
+        await adapter.exec('ALTER TABLE albums ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0');
+      }
     }
   },
 
-  async insert(album: { eventId: string | number; name: string; order: number; read_only?: boolean }): Promise<number | bigint> {
+  async insert(album: { eventId: string | number; name: string; order: number; read_only?: boolean; available_from?: string | null; hidden?: boolean }): Promise<number | bigint> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
     const result = await db.execute(
-      `INSERT INTO albums (event_id, name, ${orderCol}, read_only) VALUES (?, ?, ?, ?)`,
-      [album.eventId, album.name, album.order, album.read_only ? 1 : 0],
+      `INSERT INTO albums (event_id, name, ${orderCol}, read_only, available_from, hidden) VALUES (?, ?, ?, ?, ?, ?)`,
+      [album.eventId, album.name, album.order, album.read_only ? 1 : 0, album.available_from ?? null, album.hidden ? 1 : 0],
     );
     return result.lastInsertId;
   },
 
-  async update(album: { id: string | number; name: string; order: number; read_only?: boolean }): Promise<void> {
+  async update(album: { id: string | number; name: string; order: number; read_only?: boolean; available_from?: string | null; hidden?: boolean }): Promise<void> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
     await db.execute(
-      `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ? WHERE id = ?`,
-      [album.name, album.order, album.read_only ? 1 : 0, album.id],
+      `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ?, available_from = ?, hidden = ? WHERE id = ?`,
+      [album.name, album.order, album.read_only ? 1 : 0, album.available_from ?? null, album.hidden ? 1 : 0, album.id],
     );
   },
 
   async setReadOnly(id: number | string, readOnly: boolean): Promise<void> {
     const db = await getDb();
     await db.execute('UPDATE albums SET read_only = ? WHERE id = ?', [readOnly ? 1 : 0, id]);
+  },
+
+  async setHidden(id: number | string, hidden: boolean): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE albums SET hidden = ? WHERE id = ?', [hidden ? 1 : 0, id]);
   },
 
   async findById(id: number | string): Promise<Album | undefined> {
@@ -96,7 +121,7 @@ export const albumTable = {
 
   async updateForEvent(
     eventId: number | string,
-    albums: { id: number; name: string; order: number; read_only?: boolean }[],
+    albums: { id: number; name: string; order: number; read_only?: boolean; available_from?: string | null; hidden?: boolean }[],
   ): Promise<void> {
     const db = await getDb();
     const orderCol = db.dialect === 'mysql' ? '`order`' : '"order"';
@@ -113,13 +138,13 @@ export const albumTable = {
       for (const album of albums) {
         if (album.id > 0 && existingIds.has(album.id)) {
           await tx.execute(
-            `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ? WHERE id = ?`,
-            [album.name, album.order, album.read_only ? 1 : 0, album.id],
+            `UPDATE albums SET name = ?, ${orderCol} = ?, read_only = ?, available_from = ?, hidden = ? WHERE id = ?`,
+            [album.name, album.order, album.read_only ? 1 : 0, album.available_from ?? null, album.hidden ? 1 : 0, album.id],
           );
         } else {
           await tx.execute(
-            `INSERT INTO albums (event_id, name, ${orderCol}, read_only) VALUES (?, ?, ?, ?)`,
-            [eventId, album.name, album.order, album.read_only ? 1 : 0],
+            `INSERT INTO albums (event_id, name, ${orderCol}, read_only, available_from, hidden) VALUES (?, ?, ?, ?, ?, ?)`,
+            [eventId, album.name, album.order, album.read_only ? 1 : 0, album.available_from ?? null, album.hidden ? 1 : 0],
           );
         }
       }

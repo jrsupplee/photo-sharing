@@ -52,6 +52,15 @@ export async function POST(
         return NextResponse.json({ error: 'This album is read-only.' }, { status: 403 });
       }
     }
+    if (album?.available_from) {
+      const today = new Date().toISOString().split('T')[0];
+      if (today < album.available_from) {
+        const session = await getSession();
+        if (!await canManageEvent(session, event.id)) {
+          return NextResponse.json({ error: 'This album is not yet open for uploads.' }, { status: 403 });
+        }
+      }
+    }
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

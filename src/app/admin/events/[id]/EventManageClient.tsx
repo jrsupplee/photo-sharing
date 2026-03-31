@@ -21,8 +21,8 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [dateStart, setDateStart] = useState(event.date_start || '');
   const [dateEnd, setDateEnd] = useState(event.date_end || '');
   const [requireName, setRequireName] = useState(!!event.require_name);
-  const [albums, setAlbums] = useState<{ id: number; name: string; read_only: boolean }[]>(
-    initialAlbums.map(a => ({ id: a.id, name: a.name, read_only: !!a.read_only }))
+  const [albums, setAlbums] = useState<{ id: number; name: string; read_only: boolean; hidden: boolean; available_from: string }[]>(
+    initialAlbums.map(a => ({ id: a.id, name: a.name, read_only: !!a.read_only, hidden: !!a.hidden, available_from: a.available_from ?? '' }))
   );
   const [defaultAlbumName, setDefaultAlbumName] = useState<string>(
     initialAlbums.find(a => a.id === event.default_album_id)?.name ?? ''
@@ -118,7 +118,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
     build();
   }, [event.slug, avatarKey]);
 
-  const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false }]);
+  const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false, hidden: false, available_from: '' }]);
   const updateAlbum = (i: number, v: string) => {
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName(v);
     setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, name: v } : a));
@@ -132,6 +132,19 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ read_only: newReadOnly }),
     });
+  };
+  const toggleHidden = async (i: number) => {
+    const album = albums[i];
+    const newHidden = !album.hidden;
+    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, hidden: newHidden } : a));
+    await fetch(`/api/albums/${album.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden: newHidden }),
+    });
+  };
+  const updateAvailableFrom = (i: number, v: string) => {
+    setAlbums(prev => prev.map((a, idx) => idx === i ? { ...a, available_from: v } : a));
   };
   const removeAlbum = (i: number) => {
     if (albums[i].name === defaultAlbumName) setDefaultAlbumName('');
@@ -165,7 +178,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         name,
         date_start: dateStart || null,
         date_end: dateEnd || null,
-        albums: albumsToSave.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only })),
+        albums: albumsToSave.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only, hidden: a.hidden, available_from: a.available_from || null })),
         default_album_name: defaultAlbumName || null,
         require_name: requireName,
       }),
@@ -443,13 +456,41 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8h16M4 16h16" />
                       </svg>
                     </div>
-                    <input
-                      type="text"
-                      value={album.name}
-                      onChange={e => updateAlbum(index, e.target.value)}
-                      placeholder={`Album ${index + 1}`}
-                      className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
-                    />
+                    <div className="flex-1 flex flex-col gap-1">
+                      <input
+                        type="text"
+                        value={album.name}
+                        onChange={e => updateAlbum(index, e.target.value)}
+                        placeholder={`Album ${index + 1}`}
+                        className="w-full border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs text-stone-400 whitespace-nowrap">Available from</label>
+                        <input
+                          type="date"
+                          value={album.available_from}
+                          onChange={e => updateAvailableFrom(index, e.target.value)}
+                          className="border border-stone-200 rounded px-2 py-0.5 text-stone-600 text-xs focus:outline-none focus:border-stone-400 transition-colors bg-white"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleHidden(index)}
+                      title={album.hidden ? 'Hidden from guests' : 'Visible to guests'}
+                      className={`p-2 transition-colors ${album.hidden ? 'text-amber-500 hover:text-amber-600' : 'text-stone-300 hover:text-stone-500'}`}
+                    >
+                      {album.hidden ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleReadOnly(index)}
