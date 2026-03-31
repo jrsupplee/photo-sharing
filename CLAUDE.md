@@ -37,7 +37,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
 - `media` has a `file_hash` (SHA-256) column used for duplicate detection at upload time. If a hash matches a soft-deleted record and `deleted_by === session_id`, the item is restored instead of rejected.
 - `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form, and an `avatar_key` (nullable) for the event's circular avatar image.
-- `albums` has a `read_only` boolean. Read-only albums are hidden from the guest upload form's album selector; uploading to one requires `canManageEvent` (enforced at the API layer).
+- `albums` has `read_only`, `available_from` (date, nullable), and `hidden` booleans. Read-only and hidden albums are excluded from the guest upload form; albums with a future `available_from` date are also excluded. All three restrictions are enforced at the API layer (`canManageEvent` required to bypass).
 - `sessions` table records the uploader name per `(session_id, event_id)` pair, upserted whenever a named upload succeeds.
 
 ### Storage
@@ -92,7 +92,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `src/app/api/media/[id]/` — PATCH (edit name/caption), DELETE (soft-delete); auth via `session_id` match or `canManageEvent`
 - `src/app/api/media/[id]/restore/` — POST to restore a soft-deleted item; requires `canManageEvent`
 - `src/app/api/media/[id]/likes/` and `.../comments/` — per-media interactions
-- `src/app/api/albums/[id]/` — PATCH to update album fields (e.g. `read_only`); requires `canManageEvent`
+- `src/app/api/albums/[id]/` — PATCH to update album fields (`read_only`, `hidden`); requires `canManageEvent`; `available_from` is set via the batch save in `PUT /api/events/[id]`
 - `src/app/api/events/[id]/avatar/` — POST to upload/replace event avatar, DELETE to remove; requires `canManageEvent`
 - `src/app/api/session/` — GET returns `{ sessionId }` from the httpOnly session cookie
 - `src/app/q/[id]/` — records a QR scan in `qr_scans` then redirects to `/{slug}`; `[id]` is the event numeric ID; this is the URL encoded in the QR code

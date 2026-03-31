@@ -65,6 +65,8 @@
 * Add, rename, reorder (drag-and-drop), and delete albums
 * Set a default album that is pre-selected on the guest upload form
 * Lock individual albums as *read-only*: guests cannot upload to locked albums; the upload controls are automatically hidden or disabled in the gallery when a locked album is selected
+* #Set an *available from* date on an album: guests cannot upload before that date; admins and event managers are unaffected#
+* #*Hide* an album from guests: hidden albums are invisible in the guest gallery and upload form; admins and event managers see them with a hidden indicator icon#
 
 === Downloading Media (Download Tab)
 * Download all event photos and videos as a ZIP file

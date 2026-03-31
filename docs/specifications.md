@@ -84,14 +84,16 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 
 ### 4.3 albums
 
-| Column    | Type                | Notes                                          |
-| --------- | ------------------- | ---------------------------------------------- |
-| id        | integer PK          | auto-increment                                 |
-| event_id  | integer FK → events | CASCADE delete                                 |
-| name      | varchar             | display name                                   |
-| order     | integer             | display order within event                     |
-| read_only | boolean             | if true, only admins/event_managers may upload |
-|           | INDEX               | `event_id`                                     |
+| Column         | Type                | Notes                                                       |
+| -------------- | ------------------- | ----------------------------------------------------------- |
+| id             | integer PK          | auto-increment                                              |
+| event_id       | integer FK → events | CASCADE delete                                              |
+| name           | varchar             | display name                                                |
+| order          | integer             | display order within event                                  |
+| read_only      | boolean             | if true, only admins/event_managers may upload              |
+| available_from | date nullable       | if set, guest uploads blocked before this date              |
+| hidden         | boolean             | if true, album is hidden from guests in gallery and upload  |
+|                | INDEX               | `event_id`                                                  |
 
 ### 4.4 media
 
@@ -256,7 +258,7 @@ On first login, the user's existing anonymous `session_id` cookie is saved to `u
 
 | Method | Route              | Auth           | Description                     |
 | ------ | ------------------ | -------------- | ------------------------------- |
-| PATCH  | `/api/albums/[id]` | canManageEvent | Update album fields (read_only) |
+| PATCH  | `/api/albums/[id]` | canManageEvent | Update album fields (`read_only`, `hidden`) |
 
 ### 7.4 Media
 
@@ -348,6 +350,8 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 - Input methods: file picker, drag-and-drop, clipboard paste (desktop and mobile)
 - Optional fields: uploader name, caption, album (select from event albums)
 - Read-only albums are excluded from the guest album selector; uploading to a read-only album requires `canManageEvent` and returns `403` otherwise
+- Albums with a future `available_from` date are excluded from the guest album selector; uploading to such an album before that date requires `canManageEvent` and returns `403` otherwise
+- Hidden albums are excluded from the guest album selector
 - If `require_name` is set on the event, uploader name is required
 - Uploader name persisted in `localStorage` (`uploader_name` key) for auto-fill
 - Files upload in parallel; per-file and overall progress shown in a modal
@@ -365,7 +369,8 @@ ZIP contents are organized into per-album folders. Colliding filenames are dedup
 - Videos display with a thumbnail and play-button overlay; clicking opens `VideoModal`
 - Album tag shown on hover
 - Admins see a Deleted tab showing soft-deleted items with a Restore button
-- When a read-only album is selected, the header Upload link is greyed out and the floating "Share a Memory" button is hidden for guests; admins are unaffected
+- When a read-only or date-restricted album is selected, the header Upload link is greyed out and the floating "Share a Memory" button is hidden for guests; admins are unaffected
+- Hidden albums are not shown to guests in the gallery album tabs; admins and event managers see them with an eye-slash indicator icon
 - Event avatar (if set) is displayed as a circle beside the event name in the sticky header
 
 ### 9.3 Lightbox and Video
@@ -399,7 +404,9 @@ Albums tab:
 
 - Add, rename, reorder (drag or order field), and delete albums
 - Each album has a read-only toggle; read-only albums accept uploads only from admins and event managers
-- Read-only albums are hidden from the album selector on the guest upload form
+- Each album has an optional *available from* date; guest uploads are blocked before that date, admins and event managers are unaffected
+- Each album has a hidden toggle; hidden albums are not shown to guests in the gallery or upload form; admins and event managers see them with an eye-slash icon
+- Read-only, date-restricted, and hidden albums are excluded from the album selector on the guest upload form
 - Deleting an album nulls `album_id` on its media (not CASCADE deleted by default)
 
 Download tab:
