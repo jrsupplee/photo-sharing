@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Lato } from 'next/font/google';
 import './globals.css';
+import WelcomeQuote from '@/components/WelcomeQuote';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${lato.variable}`}>
       <body className="bg-cream min-h-screen font-lato antialiased">
+        <WelcomeQuote />
         {children}
       </body>
     </html>
