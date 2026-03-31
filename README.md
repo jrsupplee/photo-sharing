@@ -100,7 +100,7 @@ Switch backends by setting `DB_BACKEND` in your environment. All three use the s
 | `DB_NAME`                  | —                   | MySQL database name                                              |
 | `UPLOAD_DIR`               | `./uploads`         | Directory for uploaded files                                     |
 | `STORAGE_BACKEND`          | `disk`              | Storage backend (`disk`)                                         |
-| `GALLERY_REFRESH_INTERVAL` | 30                  | Auto-refresh the guest gallery every N seconds (omit to disable) |
+| `GALLERY_REFRESH_INTERVAL` | -                   | Auto-refresh the guest gallery every N seconds (omit to disable) |
 
 ## Project structure
 

@@ -36,7 +36,7 @@ export default async function EventPage({ params }: Props) {
     : [];
 
   const refreshInterval = process.env.GALLERY_REFRESH_INTERVAL
-    ? parseInt(process.env.GALLERY_REFRESH_INTERVAL, 10) * 3000
+    ? parseInt(process.env.GALLERY_REFRESH_INTERVAL, 10) * 1000
     : null;
 
   return (
