@@ -134,3 +134,22 @@ After signing in at `/admin`, use the dashboard to:
 3. Share the public gallery URL (`/<slug>`) and upload URL (`/<slug>/upload`) with guests
 
 Additional admin and event-manager accounts can be created from the Users section of the dashboard.
+
+## Building documentation PDFs
+
+Documentation lives in `docs/` as AsciiDoc files. To build PDFs you need:
+
+- [`asciidoctor`](https://asciidoctor.org/)
+- [`asciidoctor-pdf`](https://docs.asciidoctor.org/pdf-converter/latest/)
+
+Install on macOS:
+
+```bash
+gem install asciidoctor asciidoctor-pdf
+```
+
+Then from the `docs/` directory:
+
+```bash
+make
+```
