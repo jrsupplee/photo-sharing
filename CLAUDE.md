@@ -14,7 +14,8 @@ There are no tests.
 
 ## Git
 
-Do not auto-commit changes to `git`
+- Never auto-commit changes to `git` after executing a prompt.
+- If errors in the code are corrected in the process of a commit, do not commit the changes. Report the fixes that were made.
 
 ## Architecture
 
