@@ -81,7 +81,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       const viewBoxMatch = svgStr.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
       const vbW = viewBoxMatch ? parseFloat(viewBoxMatch[1]) : 120;
       const vbH = viewBoxMatch ? parseFloat(viewBoxMatch[2]) : 120;
-      const avSize = vbW * 0.40;
+      const avSize = vbW * 0.35;
       const avX = (vbW - avSize) / 2;
       const avY = (vbH - avSize) / 2;
       const avR = avSize / 2;
@@ -106,7 +106,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         img.onload = () => { ctx.drawImage(img, 0, 0, qrSize, qrSize); resolve(); };
         img.src = pngDataUrl;
       });
-      const avPx = Math.round(qrSize * 0.40);
+      const avPx = Math.round(qrSize * 0.35);
       const avOff = Math.round((qrSize - avPx) / 2);
       const avCxPx = avOff + avPx / 2;
       const avCyPx = avOff + avPx / 2;
