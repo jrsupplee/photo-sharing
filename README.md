@@ -85,22 +85,24 @@ Switch backends by setting `DB_BACKEND` in your environment. All three use the s
 
 ## Environment variables
 
-| Variable                   | Default             | Description                                                      |
-| -------------------------- | ------------------- | ---------------------------------------------------------------- |
-| `NEXTAUTH_SECRET`          | —                   | NextAuth signing secret (required)                               |
-| `NEXTAUTH_URL`             | —                   | App base URL (required)                                          |
-| `ADMIN_EMAIL`              | —                   | Admin email seeded on first run                                  |
-| `ADMIN_PASSWORD`           | —                   | Admin password seeded on first run                               |
-| `DB_BACKEND`               | `sqlite`            | Database backend: `sqlite`, `mysql`, or `postgres`               |
-| `DATABASE_PATH`            | `./data/wedding.db` | SQLite file path                                                 |
-| `DB_HOST`                  | `localhost`         | MySQL host                                                       |
-| `DB_PORT`                  | `3306`              | MySQL port                                                       |
-| `DB_USER`                  | —                   | MySQL username                                                   |
-| `DB_PASSWORD`              | —                   | MySQL password                                                   |
-| `DB_NAME`                  | —                   | MySQL database name                                              |
-| `UPLOAD_DIR`               | `./uploads`         | Directory for uploaded files                                     |
-| `STORAGE_BACKEND`          | `disk`              | Storage backend (`disk`)                                         |
-| `GALLERY_REFRESH_INTERVAL` | -                   | Auto-refresh the guest gallery every N seconds (omit to disable) |
+| Variable                     | Default             | Description                                                      |
+| ---------------------------- | ------------------- | ---------------------------------------------------------------- |
+| `NEXTAUTH_SECRET`            | —                   | NextAuth signing secret (required)                               |
+| `NEXTAUTH_URL`               | —                   | App base URL (required)                                          |
+| `ADMIN_EMAIL`                | —                   | Admin email seeded on first run                                  |
+| `ADMIN_PASSWORD`             | —                   | Admin password seeded on first run                               |
+| `DB_BACKEND`                 | `sqlite`            | Database backend: `sqlite`, `mysql`, or `postgres`               |
+| `DATABASE_PATH`              | `./data/wedding.db` | SQLite file path                                                 |
+| `DB_HOST`                    | `localhost`         | MySQL host                                                       |
+| `DB_PORT`                    | `3306`              | MySQL port                                                       |
+| `DB_USER`                    | —                   | MySQL username                                                   |
+| `DB_PASSWORD`                | —                   | MySQL password                                                   |
+| `DB_NAME`                    | —                   | MySQL database name                                              |
+| `UPLOAD_DIR`                 | `./uploads`         | Directory for uploaded files                                     |
+| `STORAGE_BACKEND`            | `disk`              | Storage backend (`disk`)                                         |
+| `GALLERY_REFRESH_INTERVAL`   | —                   | Auto-refresh the guest gallery every N seconds (omit to disable) |
+| `NEXT_PUBLIC_QR_CODE_SIZE`   | `512`               | QR code PNG export size in pixels                                |
+| `NEXT_PUBLIC_QR_AVATAR_SIZE` | `0.35`              | Avatar size as a fraction of QR code width (e.g. `0.35` = 35%)   |
 
 ## Project structure
 

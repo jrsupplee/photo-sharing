@@ -81,7 +81,8 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       const viewBoxMatch = svgStr.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
       const vbW = viewBoxMatch ? parseFloat(viewBoxMatch[1]) : 120;
       const vbH = viewBoxMatch ? parseFloat(viewBoxMatch[2]) : 120;
-      const avSize = vbW * 0.35;
+      const avFraction = parseFloat(process.env.NEXT_PUBLIC_QR_AVATAR_SIZE ?? '0.35');
+      const avSize = vbW * avFraction;
       const avX = (vbW - avSize) / 2;
       const avY = (vbH - avSize) / 2;
       const avR = avSize / 2;
@@ -96,7 +97,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
       setQrSvg(svgWithAvatar);
 
       // PNG: composite avatar onto canvas
-      const qrSize = 512;
+      const qrSize = parseInt(process.env.NEXT_PUBLIC_QR_CODE_SIZE ?? '512', 10);
       const canvas = document.createElement('canvas');
       canvas.width = qrSize;
       canvas.height = qrSize;
@@ -106,7 +107,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         img.onload = () => { ctx.drawImage(img, 0, 0, qrSize, qrSize); resolve(); };
         img.src = pngDataUrl;
       });
-      const avPx = Math.round(qrSize * 0.35);
+      const avPx = Math.round(qrSize * avFraction);
       const avOff = Math.round((qrSize - avPx) / 2);
       const avCxPx = avOff + avPx / 2;
       const avCyPx = avOff + avPx / 2;

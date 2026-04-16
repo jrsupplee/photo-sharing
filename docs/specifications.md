@@ -398,7 +398,7 @@ Event settings (General tab):
 
 - Name, slug (URL), date range, default album, require-name toggle
 - **Avatar**: upload a circular avatar image for the event; a canvas-based crop editor lets the admin drag to pan and scroll/pinch to zoom before saving; stored via the storage backend at `events/{slug}/avatar_{uuid}.jpg`; displayed in the gallery and upload page headers
-- **QR Code**: generates a QR code at `/q/{event.id}` (short redirect that records a scan then redirects to the gallery); the event avatar is composited at the centre of the code (35% width, circular crop, white backing ring); uses H-level error correction; downloadable as SVG or 512×512 PNG; scan count displayed in the admin UI; base URL sourced from `NEXTAUTH_URL`
+- **QR Code**: generates a QR code at `/q/{event.id}` (short redirect that records a scan then redirects to the gallery); the event avatar is composited at the centre of the code (circular crop, white backing ring); uses H-level error correction; downloadable as SVG or PNG; scan count displayed in the admin UI; base URL sourced from `NEXTAUTH_URL`; PNG export size controlled by `NEXT_PUBLIC_QR_CODE_SIZE` (default 512 px); avatar fraction controlled by `NEXT_PUBLIC_QR_AVATAR_SIZE` (default 0.35)
 
 Albums tab:
 
@@ -457,7 +457,10 @@ Delete tab:
 | `DB_PASSWORD`     | —                   | MySQL/PostgreSQL password          |
 | `DB_NAME`         | —                   | MySQL/PostgreSQL database name     |
 | `UPLOAD_DIR`      | `./uploads`         | Disk storage root                  |
-| `STORAGE_BACKEND` | `disk`              | Storage backend selector           |
+| `STORAGE_BACKEND`            | `disk`              | Storage backend selector                                         |
+| `GALLERY_REFRESH_INTERVAL`   | —                   | Auto-refresh the guest gallery every N seconds (omit to disable) |
+| `NEXT_PUBLIC_QR_CODE_SIZE`   | `512`               | QR code PNG export size in pixels                                |
+| `NEXT_PUBLIC_QR_AVATAR_SIZE` | `0.35`              | Avatar size as a fraction of QR code width (e.g. `0.35` = 35%)  |
 
 ---
 
