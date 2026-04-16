@@ -11,6 +11,7 @@ export interface Event {
   default_album_id: number | null;
   require_name: number;
   avatar_key: string | null;
+  qr_color: string | null;
   created_at: string;
 }
 
@@ -36,6 +37,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'avatar_key'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key VARCHAR(500)');
       }
+      if (!(await adapter.columnExists('events', 'qr_color'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN qr_color VARCHAR(20)');
+      }
     } else if (adapter.dialect === 'postgres') {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -56,6 +60,9 @@ export const eventTable = {
       if (!(await adapter.columnExists('events', 'avatar_key'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key VARCHAR(500)');
       }
+      if (!(await adapter.columnExists('events', 'qr_color'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN qr_color VARCHAR(20)');
+      }
     } else {
       await adapter.exec(`
         CREATE TABLE IF NOT EXISTS events (
@@ -75,6 +82,9 @@ export const eventTable = {
       }
       if (!(await adapter.columnExists('events', 'avatar_key'))) {
         await adapter.exec('ALTER TABLE events ADD COLUMN avatar_key TEXT');
+      }
+      if (!(await adapter.columnExists('events', 'qr_color'))) {
+        await adapter.exec('ALTER TABLE events ADD COLUMN qr_color TEXT');
       }
     }
   },
@@ -162,11 +172,12 @@ export const eventTable = {
     dateStart: string | null,
     dateEnd: string | null,
     requireName: boolean = false,
+    qrColor: string | null = null,
   ): Promise<Event> {
     const db = await getDb();
     await db.execute(
-      'UPDATE events SET name = ?, date_start = ?, date_end = ?, require_name = ? WHERE id = ?',
-      [name, dateStart, dateEnd, requireName ? 1 : 0, id],
+      'UPDATE events SET name = ?, date_start = ?, date_end = ?, require_name = ?, qr_color = ? WHERE id = ?',
+      [name, dateStart, dateEnd, requireName ? 1 : 0, qrColor, id],
     );
     return (await db.queryOne<Event>('SELECT * FROM events WHERE id = ?', [id]))!;
   },
@@ -174,6 +185,11 @@ export const eventTable = {
   async setDefaultAlbum(id: number | string, albumId: number | null): Promise<void> {
     const db = await getDb();
     await db.execute('UPDATE events SET default_album_id = ? WHERE id = ?', [albumId, id]);
+  },
+
+  async setQrColor(id: number | string, color: string | null): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE events SET qr_color = ? WHERE id = ?', [color, id]);
   },
 
   async setAvatarKey(id: number | string, key: string | null): Promise<void> {

@@ -4,6 +4,25 @@ import { eventTable, albumTable, mediaTable } from '@/lib/tables';
 import { getStorage } from '@/lib/storage/factory';
 import { isAdmin, canManageEvent } from '@/lib/authorization';
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  const { id } = await params;
+
+  if (!await canManageEvent(session, id)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await req.json();
+  if ('qr_color' in body) {
+    await eventTable.setQrColor(id, body.qr_color || null);
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -40,9 +59,9 @@ export async function PUT(
   }
 
   const body = await req.json();
-  const { name, date_start, date_end, albums, default_album_name, require_name } = body;
+  const { name, date_start, date_end, albums, default_album_name, require_name, qr_color } = body;
 
-  const event = await eventTable.update(id, name, date_start || null, date_end || null, !!require_name);
+  const event = await eventTable.update(id, name, date_start || null, date_end || null, !!require_name, qr_color || null);
 
   if (albums && Array.isArray(albums)) {
     await albumTable.updateForEvent(id, albums);

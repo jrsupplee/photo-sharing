@@ -35,17 +35,32 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
   const [downloadAlbumId, setDownloadAlbumId] = useState<string>('');
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [qrPng, setQrPng] = useState<string | null>(null);
+  const [qrColor, setQrColor] = useState(event.qr_color ?? '#000000');
   const [avatarKey, setAvatarKey] = useState<string | null>(event.avatar_key ?? null);
   const [showCropper, setShowCropper] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Auto-save qr_color after the user stops changing it
+  const initialQrColor = event.qr_color ?? '#000000';
+  useEffect(() => {
+    if (qrColor === initialQrColor) return;
+    const timer = setTimeout(() => {
+      fetch(`/api/events/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qr_color: qrColor }),
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [qrColor]);
 
   useEffect(() => {
     const url = `${origin}/q/${event.id}`;
 
     async function build() {
       const [svgStr, pngDataUrl] = await Promise.all([
-        QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'H', margin: 2, width: 120 }),
-        QRCode.toDataURL(url, { type: 'image/png', errorCorrectionLevel: 'H', margin: 2, width: 512 }),
+        QRCode.toString(url, { type: 'svg', errorCorrectionLevel: 'H', margin: 2, width: 120, color: { dark: qrColor, light: '#ffffff' } }),
+        QRCode.toDataURL(url, { type: 'image/png', errorCorrectionLevel: 'H', margin: 2, width: 512, color: { dark: qrColor, light: '#ffffff' } }),
       ]);
 
       if (!avatarKey) {
@@ -116,7 +131,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
     }
 
     build();
-  }, [event.slug, avatarKey]);
+  }, [event.slug, avatarKey, qrColor]);
 
   const addAlbum = () => setAlbums(prev => [...prev, { id: 0, name: '', read_only: false, hidden: false, available_from: '' }]);
   const updateAlbum = (i: number, v: string) => {
@@ -181,6 +196,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
         albums: albumsToSave.filter(a => a.name.trim()).map((a, i) => ({ id: a.id, name: a.name.trim(), order: i, read_only: a.read_only, hidden: a.hidden, available_from: a.available_from || null })),
         default_album_name: defaultAlbumName || null,
         require_name: requireName,
+        qr_color: qrColor,
       }),
     });
   };
@@ -364,7 +380,18 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
               <span className="text-sm text-stone-600">Require uploader name</span>
             </label>
             <div>
-              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-3">QR Code</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-xs tracking-widest text-stone-400 uppercase">QR Code</label>
+                <label className="flex items-center gap-2 text-xs text-stone-400">
+                  Color
+                  <input
+                    type="color"
+                    value={qrColor}
+                    onChange={e => setQrColor(e.target.value)}
+                    className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+                  />
+                </label>
+              </div>
               <div className="flex items-start gap-4">
                 <div className="border border-stone-100 rounded-lg p-2 shrink-0">
                   {qrSvg ? (
