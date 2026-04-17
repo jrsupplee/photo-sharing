@@ -108,6 +108,8 @@ export async function POST(
     thumbnail_key: variants?.thumbnailKey ?? null,
     medium_key: variants?.mediumKey ?? null,
     file_hash: fileHash,
+    image_width: variants?.width ?? null,
+    image_height: variants?.height ?? null,
   });
 
   if (sessionId && uploaderName) {

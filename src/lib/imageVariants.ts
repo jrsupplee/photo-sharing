@@ -8,6 +8,8 @@ import { getStorage } from './storage/factory';
 export interface ImageVariants {
   thumbnailKey: string;
   mediumKey: string;
+  width: number;
+  height: number;
 }
 
 /**
@@ -69,7 +71,7 @@ export async function generateImageVariants(
   const dir = path.dirname(basePath);
   const base = path.basename(basePath, path.extname(basePath));
 
-  const [thumbBuffer, mediumBuffer] = await Promise.all([
+  const [thumbBuffer, mediumResult] = await Promise.all([
     sharp(sourceBuffer)
       .rotate() // auto-orient from EXIF
       .resize(400, undefined, { withoutEnlargement: true })
@@ -79,13 +81,13 @@ export async function generateImageVariants(
       .rotate()
       .resize(1200, undefined, { withoutEnlargement: true })
       .jpeg({ quality: 85, progressive: true })
-      .toBuffer(),
+      .toBuffer({ resolveWithObject: true }),
   ]);
 
   const [thumbnailKey, mediumKey] = await Promise.all([
     storage.save(thumbBuffer, `${dir}/${base}_thumb${jpegExt}`, 'image/jpeg'),
-    storage.save(mediumBuffer, `${dir}/${base}_medium${jpegExt}`, 'image/jpeg'),
+    storage.save(mediumResult.data, `${dir}/${base}_medium${jpegExt}`, 'image/jpeg'),
   ]);
 
-  return { thumbnailKey, mediumKey };
+  return { thumbnailKey, mediumKey, width: mediumResult.info.width, height: mediumResult.info.height };
 }

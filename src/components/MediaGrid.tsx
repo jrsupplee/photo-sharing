@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { MasonryPhotoAlbum } from 'react-photo-album';
 import 'react-photo-album/masonry.css';
-import Lightbox from 'yet-another-react-lightbox';
-import 'yet-another-react-lightbox/styles.css';
-import Captions from 'yet-another-react-lightbox/plugins/captions';
-import 'yet-another-react-lightbox/plugins/captions.css';
-import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import PhotoSwipe from 'photoswipe';
+import 'photoswipe/style.css';
 import { Media, Album } from '@/types';
 import { Comment } from '@/types';
 import VideoModal from './VideoModal';
@@ -41,10 +39,86 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const pswpRef = useRef<PhotoSwipe | null>(null);
+  // Always-current index ref used when (re)opening PhotoSwipe
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     setMediaItems(media);
   }, [media]);
+
+  // PhotoSwipe lifecycle — only runs when lightboxOpen toggles
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    let cancelled = false;
+
+    const getImageDims = (src: string): Promise<{ width: number; height: number } | null> =>
+      new Promise(resolve => {
+        const img = new window.Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+
+    const buildDataSource = async () =>
+      Promise.all(mediaItems.map(async item => {
+        const src = `/api/files/${item.medium_key ?? item.storage_key}`;
+        if (item.image_width && item.image_height) {
+          return { src, width: item.image_width, height: item.image_height };
+        }
+        const dims = await getImageDims(src);
+        return dims ? { src, width: dims.width, height: dims.height } : { src };
+      }));
+
+    buildDataSource().then(dataSource => {
+      if (cancelled) return;
+
+      const pswp = new PhotoSwipe({
+        dataSource,
+        index: currentIndexRef.current,
+        bgOpacity: 0.95,
+        showHideAnimationType: 'fade',
+      });
+
+      pswp.on('change', () => {
+        setCurrentIndex(pswp.currIndex);
+        setShowComments(false);
+        setShowEdit(false);
+        setComments([]);
+      });
+
+      pswp.on('destroy', () => {
+        pswpRef.current = null;
+        setLightboxOpen(false);
+        setShowComments(false);
+        setShowEdit(false);
+      });
+
+      pswp.init();
+      pswpRef.current = pswp;
+    });
+
+    return () => {
+      cancelled = true;
+      if (pswpRef.current) {
+        pswpRef.current.destroy();
+        pswpRef.current = null;
+      }
+    };
+  }, [lightboxOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openLightbox = (index: number) => {
+    setCurrentIndex(index);
+    setShowComments(false);
+    setComments([]);
+    setLightboxOpen(true);
+  };
 
   const currentMedia = mediaItems[currentIndex] ?? null;
 
@@ -137,13 +211,6 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
     setSavingEdit(false);
   };
 
-  const slides = mediaItems.map(item => ({
-    src: `/api/files/${item.medium_key ?? item.storage_key}`,
-    description: item.caption || '',
-    width: 1200,
-    height: 900,
-  }));
-
   const photos = mediaItems.map((item, index) => ({
     src: `/api/files/${item.thumbnail_key ?? item.storage_key}`,
     width: 4,
@@ -163,16 +230,14 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
     );
   }
 
+  const isCurrentVideo = currentMedia?.mime_type?.startsWith('video/');
+  const canEdit = isAdmin || currentMedia?.session_id === sessionId;
+
   return (
     <>
       <MasonryPhotoAlbum
         photos={photos}
-        onClick={({ index }) => {
-          setCurrentIndex(index);
-          setShowComments(false);
-          setComments([]);
-          setLightboxOpen(true);
-        }}
+        onClick={({ index }) => openLightbox(index)}
         spacing={8}
         columns={containerWidth => {
           if (containerWidth < 400) return 2;
@@ -237,55 +302,45 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
         }}
       />
 
-      <Lightbox
-        open={lightboxOpen}
-        index={currentIndex}
-        close={() => { setLightboxOpen(false); setShowComments(false); setShowEdit(false); }}
-        slides={slides}
-        on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setShowEdit(false); setComments([]); } }}
-        plugins={[Captions, Zoom]}
-        zoom={{ maxZoomPixelRatio: 4, pinchZoomDistanceFactor: 100, scrollToZoom: true }}
-        animation={{ zoom: 0 }}
-        captions={{ showToggle: true, descriptionTextAlign: 'center' }}
-        styles={{
-          container: { backgroundColor: 'rgba(0,0,0,0.95)' },
-          captionsTitle: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' },
-          captionsDescription: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)' },
-          captionsDescriptionContainer: { bottom: '4.5rem', paddingBottom: '0.5rem' },
-        }}
-        render={{
-          controls: () => {
-            if (!currentMedia) return null;
-            const isVideo = currentMedia.mime_type?.startsWith('video/');
-            const canEdit = isAdmin || currentMedia.session_id === sessionId;
-            const topBar = (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)', pointerEvents: 'none' }}>
-                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
-                  {currentIndex + 1} / {mediaItems.length}
-                  {currentMedia.album_name && <> · {currentMedia.album_name}</>}
-                </span>
+      {/* PhotoSwipe custom UI rendered as a portal over the lightbox */}
+      {mounted && lightboxOpen && currentMedia && createPortal(
+        <>
+          {/* Hide PhotoSwipe's built-in counter since we show our own */}
+          <style>{'.pswp__counter { display: none !important; }'}</style>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 2000, pointerEvents: 'none' }}>
+
+            {/* Top bar: counter + album name */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)' }}>
+              <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
+                {currentIndex + 1} / {mediaItems.length}
+                {currentMedia.album_name && <> · {currentMedia.album_name}</>}
+              </span>
+            </div>
+
+            {/* Caption above bottom bar */}
+            {currentMedia.caption && !isCurrentVideo && !showEdit && !showComments && (
+              <div style={{ position: 'absolute', bottom: '4.5rem', left: 0, right: 0, textAlign: 'center', padding: '0 1rem 0.5rem' }}>
+                <span style={{ fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)' }}>{currentMedia.caption}</span>
               </div>
-            );
+            )}
 
-            // For videos: show thumbnail with a centered play button; the action bar is in VideoModal
-            if (isVideo) return (
-              <>
-                {topBar}
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                  <button
-                    onClick={() => { setLightboxOpen(false); setVideoOpen(true); }}
-                    style={{ pointerEvents: 'all', background: 'rgba(0,0,0,0.55)', border: '2px solid rgba(255,255,255,0.35)', borderRadius: '50%', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', backdropFilter: 'blur(4px)' }}
-                  >
-                    <svg style={{ width: 32, height: 32, marginLeft: 4 }} fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </button>
-                </div>
-              </>
-            );
+            {/* Video play button */}
+            {isCurrentVideo && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button
+                  onClick={() => { setLightboxOpen(false); setVideoOpen(true); }}
+                  style={{ pointerEvents: 'all', background: 'rgba(0,0,0,0.55)', border: '2px solid rgba(255,255,255,0.35)', borderRadius: '50%', width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', backdropFilter: 'blur(4px)' }}
+                >
+                  <svg style={{ width: 32, height: 32, marginLeft: 4 }} fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
-            if (showEdit) return (
-              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+            {/* Bottom panels */}
+            {showEdit ? (
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', pointerEvents: 'all' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                   <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Edit Photo</span>
                   <button onClick={() => setShowEdit(false)} style={{ color: 'rgba(255,255,255,0.4)', padding: '0.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -322,12 +377,9 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                     {savingEdit ? 'Saving…' : 'Save'}
                   </button>
                 </form>
-              </div></>
-            );
-            if (showComments) return (
-              <>{topBar}<div
-                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, maxHeight: '60vh', paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}
-              >
+              </div>
+            ) : showComments ? (
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '60vh', paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', pointerEvents: 'all' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                   <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Comments</span>
                   <button onClick={() => setShowComments(false)} style={{ color: 'rgba(255,255,255,0.4)', padding: '0.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -373,10 +425,9 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                     {submittingComment ? 'Posting…' : 'Post Comment'}
                   </button>
                 </form>
-              </div></>
-            );
-            if (onRestore) return (
-              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+              </div>
+            ) : onRestore ? (
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', pointerEvents: 'all' }}>
                 <button
                   onClick={() => handleRestore(currentMedia.id)}
                   disabled={restoringId === currentMedia.id}
@@ -384,10 +435,9 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                 >
                   {restoringId === currentMedia.id ? 'Restoring…' : 'Restore'}
                 </button>
-              </div></>
-            );
-            return (
-              <>{topBar}<div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+              </div>
+            ) : !isCurrentVideo && (
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem', background: 'rgba(0,0,0,0.7)', padding: '0.75rem 1.25rem', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', pointerEvents: 'all' }}>
                 <button
                   onClick={() => handleLike(currentMedia.id)}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: likedIds.has(currentMedia.id) ? '#fb7185' : 'rgba(255,255,255,0.7)' }}
@@ -427,11 +477,12 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
                     </button>
                   </>
                 )}
-              </div></>
-            );
-          }
-        }}
-      />
+              </div>
+            )}
+          </div>
+        </>,
+        document.body
+      )}
 
       {videoOpen && currentMedia?.mime_type?.startsWith('video/') && (
         <VideoModal

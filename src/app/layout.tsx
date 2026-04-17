@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Lato } from 'next/font/google';
 import './globals.css';
 import WelcomeQuote from '@/components/WelcomeQuote';
@@ -14,6 +14,13 @@ const lato = Lato({
   weight: ['300', '400', '700'],
   variable: '--font-lato',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
   title: 'Wedding Memories',

@@ -17,6 +17,8 @@ export interface Media {
   storage_key: string;
   thumbnail_key: string | null;
   medium_key: string | null;
+  image_width: number | null;
+  image_height: number | null;
   created_at: string;
   // joined fields
   album_name?: string;
@@ -53,6 +55,8 @@ export const mediaTable = {
         deleted_at: 'DATETIME',
         deleted_by: 'VARCHAR(255)',
         file_hash: 'VARCHAR(64)',
+        image_width: 'INT',
+        image_height: 'INT',
       };
       for (const [col, type] of Object.entries(mysqlCols)) {
         if (!(await adapter.columnExists('media', col))) {
@@ -85,6 +89,8 @@ export const mediaTable = {
         deleted_at: 'TIMESTAMP',
         deleted_by: 'VARCHAR(255)',
         file_hash: 'VARCHAR(64)',
+        image_width: 'INT',
+        image_height: 'INT',
       };
       for (const [col, type] of Object.entries(pgCols)) {
         if (!(await adapter.columnExists('media', col))) {
@@ -113,7 +119,7 @@ export const mediaTable = {
           FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
         )
       `);
-      for (const col of ['thumbnail_key', 'medium_key', 'session_id', 'deleted_at', 'deleted_by', 'file_hash']) {
+      for (const col of ['thumbnail_key', 'medium_key', 'session_id', 'deleted_at', 'deleted_by', 'file_hash', 'image_width', 'image_height']) {
         if (!(await adapter.columnExists('media', col))) {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} TEXT`);
         }
@@ -230,6 +236,28 @@ export const mediaTable = {
     return Number(row!.n);
   },
 
+  async findMissingDimensions(): Promise<{ id: number; medium_key: string | null; storage_key: string; mime_type: string }[]> {
+    const db = await getDb();
+    return db.query<{ id: number; medium_key: string | null; storage_key: string; mime_type: string }>(`
+      SELECT id, medium_key, storage_key, mime_type FROM media
+      WHERE (mime_type LIKE 'image/%' OR mime_type LIKE 'video/%') AND (image_width IS NULL OR image_height IS NULL) AND deleted_at IS NULL
+    `);
+  },
+
+  async countMissingDimensions(): Promise<number> {
+    const db = await getDb();
+    const row = await db.queryOne<{ n: number }>(`
+      SELECT COUNT(*) as n FROM media
+      WHERE (mime_type LIKE 'image/%' OR mime_type LIKE 'video/%') AND (image_width IS NULL OR image_height IS NULL) AND deleted_at IS NULL
+    `);
+    return Number(row!.n);
+  },
+
+  async updateDimensions(id: number, width: number, height: number): Promise<void> {
+    const db = await getDb();
+    await db.execute('UPDATE media SET image_width = ?, image_height = ? WHERE id = ?', [width, height, id]);
+  },
+
   async findByHash(eventId: number | string, fileHash: string): Promise<Media | undefined> {
     const db = await getDb();
     return db.queryOne<Media>(
@@ -252,15 +280,18 @@ export const mediaTable = {
     thumbnail_key: string | null;
     medium_key: string | null;
     file_hash: string | null;
+    image_width: number | null;
+    image_height: number | null;
   }): Promise<Media> {
     const db = await getDb();
     const result = await db.execute(`
-      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key, file_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key, file_hash, image_width, image_height)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       fields.event_id, fields.album_id, fields.filename, fields.original_name,
       fields.mime_type, fields.size, fields.caption, fields.uploader_name,
       fields.session_id, fields.storage_key, fields.thumbnail_key, fields.medium_key, fields.file_hash,
+      fields.image_width, fields.image_height,
     ]);
     return (await db.queryOne<Media>('SELECT * FROM media WHERE id = ?', [result.lastInsertId]))!;
   },
