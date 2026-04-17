@@ -7,6 +7,7 @@ import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/plugins/captions.css';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import { Media, Album } from '@/types';
 import { Comment } from '@/types';
 import VideoModal from './VideoModal';
@@ -242,7 +243,9 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
         close={() => { setLightboxOpen(false); setShowComments(false); setShowEdit(false); }}
         slides={slides}
         on={{ view: ({ index }) => { setCurrentIndex(index); setShowComments(false); setShowEdit(false); setComments([]); } }}
-        plugins={[Captions]}
+        plugins={[Captions, Zoom]}
+        zoom={{ maxZoomPixelRatio: 4, pinchZoomDistanceFactor: 100, scrollToZoom: true }}
+        animation={{ zoom: 0 }}
         captions={{ showToggle: true, descriptionTextAlign: 'center' }}
         styles={{
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
