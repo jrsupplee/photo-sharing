@@ -138,10 +138,8 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
   };
 
   const slides = mediaItems.map(item => ({
-    src: `/api/files/${item.medium_key ?? item.storage_key}`,
+    src: `/api/files/${item.storage_key}`,
     description: item.caption || '',
-    width: 1200,
-    height: 900,
   }));
 
   const photos = mediaItems.map((item, index) => ({
