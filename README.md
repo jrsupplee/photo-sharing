@@ -83,6 +83,42 @@ Make sure `NEXTAUTH_URL` is set to your public URL in production.
 
 Switch backends by setting `DB_BACKEND` in your environment. All three use the same schema — tables are created automatically on first run.
 
+## Migrating from SQLite to MySQL
+
+If you outgrow a single-server SQLite deployment (e.g. you need multiple app instances, or want a managed database), you can move to MySQL without changing any application code — just the config and the data.
+
+1. **Create the MySQL database and user**, and grant it full privileges on that database:
+
+   ```sql
+   CREATE DATABASE wedding CHARACTER SET utf8mb4;
+   CREATE USER 'wedding'@'%' IDENTIFIED BY 'secret';
+   GRANT ALL PRIVILEGES ON wedding.* TO 'wedding'@'%';
+   ```
+
+2. **Create the schema.** Point a throwaway run of the app at the new MySQL database (`DB_BACKEND=mysql` plus the `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` vars from [Configuration](#configuration)) and start it once — `getDb()` creates all tables in dependency order on boot, then exits/restarts as normal. No data is copied yet.
+
+3. **Copy the data.** There's no built-in export/import command, so use [`scripts/migrate-to-mysql.mjs`](scripts/migrate-to-mysql.mjs), which reads from the SQLite file and writes to MySQL, table by table, in the same dependency order the app creates them in: `events` → `albums` → `users` → `media` → `comments` → `likes` → `event_permissions` → `sessions` → `qr_scans`.
+
+   ```bash
+   DB_HOST=localhost DB_PORT=3306 DB_USER=wedding DB_PASSWORD=secret DB_NAME=wedding \
+     node scripts/migrate-to-mysql.mjs ./data/wedding.db
+   ```
+
+   or
+
+   ```bash
+   set -a; source .env.local; set +a
+   node scripts/migrate-to-mysql.mjs
+   ```
+
+   `INSERT`ing explicit primary key values is safe — MySQL advances each table's `AUTO_INCREMENT` counter past the highest inserted id automatically, so new rows created after the migration won't collide.
+
+4. **Point the app at MySQL** by updating `.env.local` (or your deployment's env vars) with the `DB_BACKEND=mysql` block and restart. `UPLOAD_DIR`/`STORAGE_BACKEND` don't need to change — uploaded files live on disk independently of the database backend.
+
+5. **Verify** by signing in at `/admin` and confirming events, albums, and media all show up, then spot-check likes/comments on a gallery page.
+
+Keep the old `DATABASE_PATH` SQLite file around as a backup until you've confirmed the MySQL copy is complete and correct.
+
 ## Environment variables
 
 | Variable                     | Default             | Description                                                      |
