@@ -16,7 +16,11 @@ npm install
 
 ## Configuration
 
-Copy the example below into a `.env.local` file and fill in the values:
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
 
 ```bash
 # Admin credentials (required)
