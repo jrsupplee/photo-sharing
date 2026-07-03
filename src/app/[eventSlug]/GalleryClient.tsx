@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { Event, Album, Media } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
+import { formatEventDate } from '@/lib/formatDate';
 
 interface GalleryClientProps {
   event: Event;
@@ -65,15 +66,6 @@ export default function GalleryClient({
     return acc;
   }, {});
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return null;
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
@@ -93,9 +85,9 @@ export default function GalleryClient({
             </div>
             {event.date_start && (
               <p className="text-stone-400 text-xs font-light tracking-widest mt-0.5">
-                {formatDate(event.date_start)}
+                {formatEventDate(event.date_start)}
                 {event.date_end && event.date_end !== event.date_start && (
-                  <> — {formatDate(event.date_end)}</>
+                  <> — {formatEventDate(event.date_end)}</>
                 )}
               </p>
             )}

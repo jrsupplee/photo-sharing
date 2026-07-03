@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { eventTable } from '@/lib/tables';
 import { Event } from '@/types';
+import { formatEventDate } from '@/lib/formatDate';
 
 export default async function Home() {
   let events: Event[] = [];
@@ -52,17 +53,9 @@ export default async function Home() {
                   </h2>
                   {event.date_start && (
                     <p className="text-stone-400 text-sm mt-1 font-light">
-                      {new Date(event.date_start).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {formatEventDate(event.date_start)}
                       {event.date_end && event.date_end !== event.date_start && (
-                        <> – {new Date(event.date_end).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}</>
+                        <> – {formatEventDate(event.date_end)}</>
                       )}
                     </p>
                   )}

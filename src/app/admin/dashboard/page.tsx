@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getSession } from '@/lib/getSession';
 import { eventTable } from '@/lib/tables';
 import { isAdmin } from '@/lib/authorization';
+import { formatEventDate } from '@/lib/formatDate';
 import SignOutButton from '../SignOutButton';
 import BackfillVariants from './BackfillVariants';
 
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
                     <h3 className="font-cormorant text-2xl text-stone-700">{event.name}</h3>
                     <div className="flex items-center gap-4 mt-2 text-sm text-stone-400 font-light">
                       {event.date_start && (
-                        <span>{new Date(event.date_start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span>{formatEventDate(event.date_start)}</span>
                       )}
                       <span className="text-stone-300">·</span>
                       <span>{event.media_count} photos</span>
