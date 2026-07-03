@@ -1,0 +1,25 @@
+# Settings derived from pm2.config.js:
+#   - port 3001            (pm2 args: "start -p 3001")
+#   - env_file .env.local  (pm2 env_file)
+#   - restart policy       (pm2 autorestart / restart_delay)
+# Logs go to stdout (docker logs) instead of pm2's out_file/error_file.
+#
+# Set UID and GID in .env.local to control which user the app runs as
+# (and who owns files in ./data and ./uploads). Defaults to 1000:1000.
+services:
+  photo-sharing:
+    build: .
+    container_name: photo-sharing
+    ports:
+      - '3001:3001'
+    env_file:
+      - .env.local
+    environment:
+      # Pin storage paths to the container mounts, overriding any
+      # host-specific values in .env.local
+      DATABASE_PATH: /app/data/wedding.db
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    restart: unless-stopped

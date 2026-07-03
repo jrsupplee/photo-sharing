@@ -8,6 +8,8 @@ A wedding photo sharing app built with Next.js. Guests can browse galleries, upl
 - npm
 - SQLite (default, no extra setup), MySQL 8+, or PostgreSQL 14+
 
+Or, for a containerized install, just Docker with the Compose plugin — see [Docker](#docker).
+
 ## Installation
 
 ```bash
@@ -76,6 +78,58 @@ npm start
 ```
 
 Make sure `NEXTAUTH_URL` is set to your public URL in production.
+
+## Docker
+
+The repo includes a `Dockerfile` and `docker-compose.yml` for running the app in a container. The container listens on port **3001**.
+
+1. **Configure.** Copy `.env.example` to `.env.local` and fill in the values as described in [Configuration](#configuration). Set `NEXTAUTH_URL` to the public URL the app will be reached at.
+
+2. **Optionally set the run user.** Add `UID` and `GID` to `.env.local` to control which user the app runs as inside the container — and therefore who owns the files in `data/` and `uploads/` on the host. Defaults to `1000:1000` when unset. On first start the container fixes ownership of the mounted directories automatically.
+
+   ```bash
+   # e.g. run as the deploy user
+   UID=1001
+   GID=1001
+   ```
+
+3. **Build and start:**
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   The app is served on [http://localhost:3001](http://localhost:3001). On first run it creates the database, seeds the admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`, and creates the upload directory.
+
+### Data and persistence
+
+The SQLite database and uploaded files are stored on the host via bind mounts:
+
+| Host path   | Container path | Contents                          |
+| ----------- | -------------- | --------------------------------- |
+| `./data`    | `/app/data`    | SQLite database (`wedding.db`)    |
+| `./uploads` | `/app/uploads` | Uploaded photos, videos, variants |
+
+`DATABASE_PATH` and `UPLOAD_DIR` in `.env.local` are ignored in Docker — the compose file pins them to the container paths above so host-specific paths can't break the mounts. To reuse data from an existing non-Docker deployment, point the `volumes:` entries in `docker-compose.yml` at your existing directories instead, e.g.:
+
+```yaml
+volumes:
+  - /var/www/vhosts/photos/data:/app/data
+  - /var/www/vhosts/photos/uploads:/app/uploads
+```
+
+To use MySQL or PostgreSQL instead of SQLite, set the `DB_BACKEND` block in `.env.local` as usual; the `./data` mount is then unused.
+
+### Operations
+
+```bash
+docker compose logs -f      # tail app logs (replaces pm2 log files)
+docker compose restart      # restart the app
+docker compose up -d --build  # rebuild and redeploy after pulling changes
+docker compose down         # stop and remove the container (data survives)
+```
+
+The container restarts automatically on crashes and on boot (`restart: unless-stopped`), so a separate process manager such as pm2 is not needed.
 
 ## Database backends
 

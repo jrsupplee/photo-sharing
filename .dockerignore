@@ -1,0 +1,13 @@
+node_modules
+.next
+data
+uploads
+.env*
+!.env.example
+.git
+docs
+prompts
+scripts
+*.md
+Dockerfile
+docker-compose.yml
