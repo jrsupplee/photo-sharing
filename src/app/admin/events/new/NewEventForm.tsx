@@ -102,7 +102,7 @@ export default function NewEventForm() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Start Date</label>
+          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Date</label>
           <input
             type="date"
             value={dateStart}
@@ -111,7 +111,7 @@ export default function NewEventForm() {
           />
         </div>
         <div>
-          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">End Date</label>
+          <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Close Uploads Date</label>
           <input
             type="date"
             value={dateEnd}
