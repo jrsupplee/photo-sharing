@@ -12,6 +12,8 @@ npm run lint     # ESLint
 
 There are no tests.
 
+Docs in `docs/` are AsciiDoc; build PDFs with `make` from that directory (requires `asciidoctor-pdf`).
+
 ## Git
 
 - Never auto-commit changes to `git` after executing a prompt.
@@ -33,10 +35,10 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - The `DbAdapter` interface (`src/lib/db/adapter.ts`) abstracts `query`, `queryOne`, `execute`, `exec`, `columnExists`, and `transaction`. SQLite wraps `better-sqlite3` synchronously; MySQL wraps `mysql2/promise`; PostgreSQL wraps `pg` with `?`→`$n` placeholder rewriting and `RETURNING id` appended to INSERTs for last-insert-id. Transactions use pool connections for MySQL/PostgreSQL.
 - **All table methods are async** and return Promises. `db/index.ts` imports table files directly (not from the barrel) to avoid circular imports — `create()` functions accept an adapter param and do not call `getDb()`. Seeding the initial admin user is handled by `seedAdminIfNeeded(adapter)` exported from `src/lib/tables/users.ts`.
 - Core tables: `events` → `albums` → `media`, plus `likes`, `comments`, `sessions`, and `qr_scans`.
-- `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`.
+- `media` stores three storage keys: `storage_key` (original), `thumbnail_key` (400px), `medium_key` (1200px). Variants are generated at upload time via `sharp` in `src/lib/imageVariants.ts`. **Videos are supported too**: `mime_type` distinguishes them, and `imageVariants.ts` extracts a poster frame at the 1-second mark via ffmpeg (`@ffmpeg-installer/ffmpeg`, spawned as a child process) and generates the same JPEG variants from that frame.
 - `media` has `deleted_at` and `deleted_by` columns for soft-delete. All public/guest queries filter `WHERE deleted_at IS NULL`. Admins see a Deleted tab in the public gallery (not the manage page).
 - `media` has a `file_hash` (SHA-256) column used for duplicate detection at upload time. If a hash matches a soft-deleted record and `deleted_by === session_id`, the item is restored instead of rejected.
-- `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form, and an `avatar_key` (nullable) for the event's circular avatar image.
+- `events` has a `default_album_id` (nullable) that pre-selects an album on the guest upload form, an `avatar_key` (nullable) for the event's circular avatar image, and a `qr_color` (nullable) for the QR code foreground color (auto-saved from the manage page).
 - `albums` has `read_only`, `available_from` (date, nullable), and `hidden` booleans. Read-only and hidden albums are excluded from the guest upload form; albums with a future `available_from` date are also excluded. All three restrictions are enforced at the API layer (`canManageEvent` required to bypass).
 - `sessions` table records the uploader name per `(session_id, event_id)` pair, upserted whenever a named upload succeeds.
 
@@ -69,11 +71,11 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 | ---------------------------- | ------------------- | ---------------------------------------------------------------- |
 | `DB_BACKEND`                 | `sqlite`            | Database backend: `sqlite`, `mysql`, or `postgres`               |
 | `DATABASE_PATH`              | `./data/wedding.db` | SQLite file location                                             |
-| `DB_HOST`                    | `localhost`         | MySQL host                                                       |
-| `DB_PORT`                    | `3306`              | MySQL port                                                       |
-| `DB_USER`                    | —                   | MySQL username                                                   |
-| `DB_PASSWORD`                | —                   | MySQL password                                                   |
-| `DB_NAME`                    | —                   | MySQL database name                                              |
+| `DB_HOST`                    | `localhost`         | MySQL/PostgreSQL host                                            |
+| `DB_PORT`                    | `3306`/`5432`       | MySQL/PostgreSQL port                                            |
+| `DB_USER`                    | —                   | MySQL/PostgreSQL username                                        |
+| `DB_PASSWORD`                | —                   | MySQL/PostgreSQL password                                        |
+| `DB_NAME`                    | —                   | MySQL/PostgreSQL database name                                   |
 | `UPLOAD_DIR`                 | `./uploads`         | Disk storage root                                                |
 | `STORAGE_BACKEND`            | `disk`              | Storage backend selector                                         |
 | `ADMIN_EMAIL`                | —                   | Seeded on first run if no users exist                            |
@@ -104,3 +106,13 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 ### MediaGrid
 
 `src/components/MediaGrid.tsx` is used for both the normal gallery and the admin Deleted view. When an `onRestore` prop is provided, the lightbox shows only a Restore button instead of the normal like/comment/edit/delete controls.
+
+- The grid renders `thumbnail_key`; the lightbox (`yet-another-react-lightbox` with the zoom plugin) loads the **full-size original** (`storage_key`), not the medium variant.
+- Videos show a thumbnail with a play button in the grid and play in `src/components/VideoModal.tsx` (which also hosts the video's action bar) instead of the lightbox.
+- `src/components/WelcomeQuote.tsx` (rendered in the root layout) shows a first-visit welcome overlay, dismissed via the `welcome_seen` localStorage key.
+
+### Deployment
+
+- **Docker** (preferred): `docker compose up -d --build` serves on port **3001**; `./data` and `./uploads` are bind-mounted, `DATABASE_PATH`/`UPLOAD_DIR` are pinned by the compose file (values in `.env.local` are ignored). `UID`/`GID` env vars control the container user; `docker-entrypoint.sh` fixes mount ownership on start. `pull-and-build.sh` = git pull + compose rebuild.
+- **pm2** (legacy non-Docker): `pm2.config.js` runs `next start -p 3001` from `/var/www/vhosts/photos/server`.
+- `scripts/migrate-to-mysql.mjs` copies data from the SQLite file to MySQL in table dependency order (schema must already exist — boot the app against MySQL once first). Details in README.
