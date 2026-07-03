@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { Event, Album, Media } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
 
@@ -289,17 +290,30 @@ export default function GalleryClient({
         );
       })()}
 
-      {/* Floating login button */}
-      <Link
-        href="/admin/login"
-        title="Admin login"
-        className="fixed bottom-6 left-6 sm:bottom-8 sm:left-8 flex items-center justify-center w-11 h-11 bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 transition-all duration-300 shadow-sm hover:shadow-md rounded-full"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-        <span className="sr-only">Log in</span>
-      </Link>
+      {/* Floating login/logout button */}
+      {isAdmin ? (
+        <button
+          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          title="Log out"
+          className="fixed bottom-6 left-6 sm:bottom-8 sm:left-8 flex items-center justify-center w-11 h-11 bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 transition-all duration-300 shadow-sm hover:shadow-md rounded-full"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="sr-only">Log out</span>
+        </button>
+      ) : (
+        <Link
+          href="/admin/login"
+          title="Admin login"
+          className="fixed bottom-6 left-6 sm:bottom-8 sm:left-8 flex items-center justify-center w-11 h-11 bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-400 hover:text-stone-600 hover:border-stone-300 transition-all duration-300 shadow-sm hover:shadow-md rounded-full"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="sr-only">Log in</span>
+        </Link>
+      )}
     </div>
   );
 }
