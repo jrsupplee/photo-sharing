@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
@@ -65,6 +65,30 @@ export default function GalleryClient({
     if (m.album_id) acc[m.album_id] = (acc[m.album_id] || 0) + 1;
     return acc;
   }, {});
+
+  // Swipe left/right in the gallery to move to the next/previous album tab.
+  // Sequence: All → albums in tab order; no wrap-around; Deleted excluded.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = e.touches.length === 1
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+      : null;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || showDeleted || albums.length < 2) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const sequence: (number | null)[] = [null, ...albums.map(a => a.id)];
+    const currentIndex = sequence.indexOf(activeAlbum);
+    const nextIndex = currentIndex + (dx < 0 ? 1 : -1);
+    if (nextIndex < 0 || nextIndex >= sequence.length) return;
+    handleAlbumChange(sequence[nextIndex]);
+  };
 
   return (
     <div className="min-h-screen bg-cream">
@@ -208,7 +232,11 @@ export default function GalleryClient({
       )}
 
       {/* Gallery */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8">
+      <main
+        className="max-w-7xl mx-auto px-3 sm:px-6 py-8"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {showDeleted ? (
           <>
             <p className="text-stone-400 text-sm font-light mb-6">

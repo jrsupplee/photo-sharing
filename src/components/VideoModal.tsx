@@ -116,7 +116,12 @@ export default function VideoModal({
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.97)', display: 'flex', flexDirection: 'column' }}>
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.97)', display: 'flex', flexDirection: 'column' }}
+      // Rendered inline (no portal), so keep touches from reaching the gallery's swipe handler
+      onTouchStart={e => e.stopPropagation()}
+      onTouchEnd={e => e.stopPropagation()}
+    >
       {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)', flexShrink: 0 }}>
         <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
