@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/getSession';
 import AdminLoginForm from '../LoginForm';
+import BackLink from './BackLink';
 
 export default async function AdminLoginPage() {
   const session = await getSession();
@@ -9,7 +10,8 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+    <div className="relative min-h-screen bg-cream flex items-center justify-center px-4">
+      <BackLink />
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="w-12 h-px bg-stone-300 mx-auto mb-6" />
