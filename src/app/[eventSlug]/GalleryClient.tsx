@@ -68,30 +68,84 @@ export default function GalleryClient({
 
   // Swipe left/right in the gallery to move to the next/previous album tab.
   // Sequence: All → albums in tab order; no wrap-around; Deleted excluded.
+  // The gallery follows the finger while dragging, slides out when the swipe
+  // commits and the new album slides in from the opposite side; too-short
+  // swipes and swipes past the ends spring back.
+  const galleryRef = useRef<HTMLElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeAxis = useRef<'horizontal' | 'vertical' | null>(null);
+  const swipeAnimating = useRef(false);
+
+  const swipeSequence: (number | null)[] = [null, ...albums.map(a => a.id)];
+  const swipeEnabled = !showDeleted && albums.length > 1;
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = e.touches.length === 1
+    swipeAxis.current = null;
+    touchStart.current = !swipeAnimating.current && e.touches.length === 1
       ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
       : null;
   };
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    const el = galleryRef.current;
+    if (!start || !el || !swipeEnabled) return;
+    const dx = e.touches[0].clientX - start.x;
+    const dy = e.touches[0].clientY - start.y;
+    if (!swipeAxis.current) {
+      // Lock the gesture to one axis so vertical scrolling never drags the page sideways
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      swipeAxis.current = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+    }
+    if (swipeAxis.current !== 'horizontal') return;
+    const nextIndex = swipeSequence.indexOf(activeAlbum) + (dx < 0 ? 1 : -1);
+    const hasTarget = nextIndex >= 0 && nextIndex < swipeSequence.length;
+    el.style.transition = 'none';
+    // Dampen the drag when there is no album in that direction (rubber-band)
+    el.style.transform = `translateX(${hasTarget ? dx : dx / 3}px)`;
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     const start = touchStart.current;
+    const axis = swipeAxis.current;
     touchStart.current = null;
-    if (!start || showDeleted || albums.length < 2) return;
+    swipeAxis.current = null;
+    const el = galleryRef.current;
+    if (!start || !el || !swipeEnabled || axis !== 'horizontal') return;
     const dx = e.changedTouches[0].clientX - start.x;
-    const dy = e.changedTouches[0].clientY - start.y;
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const sequence: (number | null)[] = [null, ...albums.map(a => a.id)];
-    const currentIndex = sequence.indexOf(activeAlbum);
-    const nextIndex = currentIndex + (dx < 0 ? 1 : -1);
-    if (nextIndex < 0 || nextIndex >= sequence.length) return;
-    handleAlbumChange(sequence[nextIndex]);
+    const dir = dx < 0 ? 1 : -1;
+    const nextIndex = swipeSequence.indexOf(activeAlbum) + dir;
+    const hasTarget = nextIndex >= 0 && nextIndex < swipeSequence.length;
+
+    if (Math.abs(dx) < 50 || !hasTarget) {
+      el.style.transition = 'transform 0.2s ease-out';
+      el.style.transform = 'translateX(0)';
+      setTimeout(() => { el.style.transition = ''; }, 220);
+      return;
+    }
+
+    swipeAnimating.current = true;
+    const width = el.clientWidth;
+    el.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
+    el.style.transform = `translateX(${-dir * width}px)`;
+    el.style.opacity = '0';
+    setTimeout(() => {
+      handleAlbumChange(swipeSequence[nextIndex]);
+      el.style.transition = 'none';
+      el.style.transform = `translateX(${dir * width}px)`;
+      void el.offsetHeight; // flush styles so the slide-in transition starts from the new side
+      el.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+      el.style.transform = 'translateX(0)';
+      el.style.opacity = '1';
+      setTimeout(() => {
+        el.style.transition = '';
+        swipeAnimating.current = false;
+      }, 260);
+    }, 210);
   };
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-cream overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-cream/90 backdrop-blur-sm border-b border-stone-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -233,8 +287,10 @@ export default function GalleryClient({
 
       {/* Gallery */}
       <main
+        ref={galleryRef}
         className="max-w-7xl mx-auto px-3 sm:px-6 py-8"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {showDeleted ? (
