@@ -244,7 +244,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
         plugins={[Captions, Zoom]}
         zoom={{ maxZoomPixelRatio: 4, pinchZoomDistanceFactor: 100, scrollToZoom: true }}
         animation={{ zoom: 0 }}
-        captions={{ showToggle: true, descriptionTextAlign: 'center' }}
+        captions={{ showToggle: false, descriptionTextAlign: 'center' }}
         styles={{
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
           captionsTitle: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' },
