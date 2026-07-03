@@ -17,7 +17,7 @@ services:
     environment:
       # Pin storage paths to the container mounts, overriding any
       # host-specific values in .env.local
-      DATABASE_PATH: /app/data/wedding.db
+      DATABASE_PATH: /app/data/photos.db
       UPLOAD_DIR: /app/uploads
     volumes:
       - ./data:/app/data
