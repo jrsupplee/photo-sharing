@@ -52,12 +52,12 @@
 * Quick link to each event's gallery and management page
 
 === Creating Events
-* Set event name, URL slug, start and end dates
+* Set event name, URL slug, event date, and close-uploads date
 * Define albums upfront or add them later
 * Option to require uploaders to enter their name
 
 === Managing an Event (General Tab)
-* Edit name, date range, and require-name setting
+* Edit name, event date, close-uploads date, and require-name setting
 * Upload or change the event avatar with a built-in circular crop editor (drag to pan, scroll/pinch to zoom)
 * Download a QR code for the guest gallery URL
 

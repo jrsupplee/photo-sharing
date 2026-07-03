@@ -352,7 +352,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Start Date</label>
+                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Date</label>
                 <input
                   type="date"
                   value={dateStart}
@@ -361,7 +361,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                 />
               </div>
               <div>
-                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">End Date</label>
+                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Close Uploads Date</label>
                 <input
                   type="date"
                   value={dateEnd}
@@ -477,31 +477,21 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                     onDragOver={e => e.preventDefault()}
                     onDrop={() => onDrop(index)}
                     onDragEnd={onDragEnd}
-                    className={`flex items-center gap-2 rounded-lg transition-colors ${dragOver === index ? 'bg-stone-100' : ''}`}
+                    className={`rounded-lg transition-colors ${dragOver === index ? 'bg-stone-100' : ''}`}
                   >
+                    <div className="flex items-center gap-2">
                     <div className="p-1 cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-500 transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8h16M4 16h16" />
                       </svg>
                     </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      <input
-                        type="text"
-                        value={album.name}
-                        onChange={e => updateAlbum(index, e.target.value)}
-                        placeholder={`Album ${index + 1}`}
-                        className="w-full border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
-                      />
-                      <div className="flex items-center gap-1.5">
-                        <label className="text-xs text-stone-400 whitespace-nowrap">Available from</label>
-                        <input
-                          type="date"
-                          value={album.available_from}
-                          onChange={e => updateAvailableFrom(index, e.target.value)}
-                          className="border border-stone-200 rounded px-2 py-0.5 text-stone-600 text-xs focus:outline-none focus:border-stone-400 transition-colors bg-white"
-                        />
-                      </div>
-                    </div>
+                    <input
+                      type="text"
+                      value={album.name}
+                      onChange={e => updateAlbum(index, e.target.value)}
+                      placeholder={`Album ${index + 1}`}
+                      className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-stone-700 focus:outline-none focus:border-stone-400 transition-colors text-sm"
+                    />
                     <button
                       type="button"
                       onClick={() => toggleHidden(index)}
@@ -540,6 +530,16 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1 pl-8">
+                      <label className="text-xs text-stone-400 whitespace-nowrap">Available from</label>
+                      <input
+                        type="date"
+                        value={album.available_from}
+                        onChange={e => updateAvailableFrom(index, e.target.value)}
+                        className="border border-stone-200 rounded px-2 py-0.5 text-stone-600 text-xs focus:outline-none focus:border-stone-400 transition-colors bg-white"
+                      />
+                    </div>
                   </div>
                 ))}
                 {albums.length === 0 && (
