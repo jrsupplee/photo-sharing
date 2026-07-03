@@ -6,6 +6,7 @@ import { Event, Album } from '@/types';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 import AvatarCropper from '@/components/AvatarCropper';
+import HelpTip from '@/components/HelpTip';
 
 interface Props {
   event: Event;
@@ -293,7 +294,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
           <form onSubmit={handleSave} className="bg-white rounded-xl border border-stone-100 p-6 space-y-5">
             {/* Avatar */}
             <div>
-              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-3">Event Avatar</label>
+              <label className="flex items-center gap-1.5 text-xs tracking-widest text-stone-400 uppercase mb-3">Event Avatar <HelpTip topic="event_avatar" /></label>
               {showCropper ? (
                 <div>
                   {uploadingAvatar ? (
@@ -341,7 +342,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
               )}
             </div>
             <div>
-              <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Name</label>
+              <label className="flex items-center gap-1.5 text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Name <HelpTip topic="event_name" /></label>
               <input
                 type="text"
                 value={name}
@@ -352,7 +353,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Date</label>
+                <label className="flex items-center gap-1.5 text-xs tracking-widest text-stone-400 uppercase mb-1.5">Event Date <HelpTip topic="event_date" /></label>
                 <input
                   type="date"
                   value={dateStart}
@@ -361,7 +362,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                 />
               </div>
               <div>
-                <label className="block text-xs tracking-widest text-stone-400 uppercase mb-1.5">Close Uploads Date</label>
+                <label className="flex items-center gap-1.5 text-xs tracking-widest text-stone-400 uppercase mb-1.5">Close Uploads Date <HelpTip topic="close_uploads_date" /></label>
                 <input
                   type="date"
                   value={dateEnd}
@@ -371,15 +372,18 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                 />
               </div>
             </div>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={requireName}
-                onChange={e => setRequireName(e.target.checked)}
-                className="w-4 h-4 rounded border-stone-300 text-stone-800 focus:ring-stone-400"
-              />
-              <span className="text-sm text-stone-600">Require uploader name</span>
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={requireName}
+                  onChange={e => setRequireName(e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 text-stone-800 focus:ring-stone-400"
+                />
+                <span className="text-sm text-stone-600">Require uploader name</span>
+              </label>
+              <HelpTip topic="require_name" />
+            </div>
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-xs tracking-widest text-stone-400 uppercase">QR Code</label>
@@ -459,7 +463,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
           <form onSubmit={handleSave} className="bg-white rounded-xl border border-stone-100 p-6 space-y-5">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs tracking-widest text-stone-400 uppercase">Albums</label>
+                <label className="flex items-center gap-1.5 text-xs tracking-widest text-stone-400 uppercase">Albums <HelpTip topic="albums" /></label>
                 <button type="button" onClick={addAlbum} className="text-xs text-stone-500 hover:text-stone-700 transition-colors flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -532,7 +536,7 @@ export default function EventManageClient({ event, albums: initialAlbums, isAdmi
                     </button>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 pl-8">
-                      <label className="text-xs text-stone-400 whitespace-nowrap">Available from</label>
+                      <label className="flex items-center gap-1.5 text-xs text-stone-400 whitespace-nowrap">Available from <HelpTip topic="available_from" /></label>
                       <input
                         type="date"
                         value={album.available_from}
