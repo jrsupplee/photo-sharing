@@ -88,7 +88,7 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 
 - `src/app/[eventSlug]/` — public gallery; server component fetches media (with `user_liked`) and passes to `GalleryClient` → `MediaGrid`. Admins also see a Deleted tab here (not in the manage page).
 - `src/app/[eventSlug]/upload/` — guest upload page; reads `session_id` from cookie server-side and passes `albums`, `default_album_id`, and `sessionId` to `UploadForm`
-- `src/app/admin/` — redirects to `/admin/login`; login page at `/admin/login`; dashboard, event management (`/admin/events/[id]` has General / Albums / Download / Delete tabs)
+- `src/app/admin/` — redirects to `/admin/login`; login page at `/admin/login`; dashboard, event management (`/admin/events/[id]` has General / Albums / Download / Delete tabs), and `/admin/users` (admin-only user management)
 - `src/app/api/events/[id]/media/` — POST upload, GET list; `[id]` is the event **slug**
 - `src/app/api/events/[id]/download/` — GET streams a ZIP of event media; accepts `?album_id=`; requires `canManageEvent`
 - `src/app/api/media/[id]/` — PATCH (edit name/caption), DELETE (soft-delete); auth via `session_id` match or `canManageEvent`
@@ -97,6 +97,8 @@ This is a **Next.js 16 App Router** wedding photo sharing app. Two audiences: gu
 - `src/app/api/albums/[id]/` — PATCH to update album fields (`read_only`, `hidden`); requires `canManageEvent`; `available_from` is set via the batch save in `PUT /api/events/[id]`
 - `src/app/api/events/[id]/avatar/` — POST to upload/replace event avatar, DELETE to remove; requires `canManageEvent`
 - `src/app/api/session/` — GET returns `{ sessionId }` from the httpOnly session cookie
+- `src/app/api/admin/users/` and `.../[id]` — admin-only CRUD for `admin`/`event_manager` accounts
+- `src/app/api/admin/backfill-variants/` — POST regenerates missing `thumbnail_key`/`medium_key` variants for existing media (requires an authenticated session)
 - `src/app/q/[id]/` — records a QR scan in `qr_scans` then redirects to `/{slug}`; `[id]` is the event numeric ID; this is the URL encoded in the QR code
 
 ### MediaGrid
