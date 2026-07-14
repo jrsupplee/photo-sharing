@@ -6,6 +6,11 @@
 #
 # Set UID and GID in .env.local to control which user the app runs as
 # (and who owns files in ./data and ./uploads). Defaults to 1000:1000.
+#
+# Set UPLOAD_HOST_DIR in .env.local to bind-mount uploads from somewhere
+# other than ./uploads (e.g. an existing non-Docker deployment's directory).
+# Requires `docker compose --env-file .env.local ...` (see pull-and-build.sh)
+# since Compose only reads .env.local for substitution when told to.
 services:
   photo-sharing:
     build: .
@@ -21,5 +26,5 @@ services:
       UPLOAD_DIR: /app/uploads
     volumes:
       - ./data:/app/data
-      - ./uploads:/app/uploads
+      - ${UPLOAD_HOST_DIR:-./uploads}:/app/uploads
     restart: unless-stopped

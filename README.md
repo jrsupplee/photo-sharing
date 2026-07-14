@@ -96,8 +96,10 @@ The repo includes a `Dockerfile` and `docker-compose.yml` for running the app in
 3. **Build and start:**
 
    ```bash
-   docker compose up -d --build
+   docker compose --env-file .env.local up -d --build
    ```
+
+   The `--env-file .env.local` flag is required — Compose only substitutes variables like `UPLOAD_HOST_DIR` (below) from `.env.local` when told to look there; it does not pick it up automatically the way `env_file:` inside the compose file does for the container's own environment.
 
    The app is served on [http://localhost:3001](http://localhost:3001). On first run it creates the database, seeds the admin user from `ADMIN_EMAIL` / `ADMIN_PASSWORD`, and creates the upload directory.
 
@@ -110,12 +112,21 @@ The SQLite database and uploaded files are stored on the host via bind mounts:
 | `./data`    | `/app/data`    | SQLite database (`wedding.db`)    |
 | `./uploads` | `/app/uploads` | Uploaded photos, videos, variants |
 
-`DATABASE_PATH` and `UPLOAD_DIR` in `.env.local` are ignored in Docker — the compose file pins them to the container paths above so host-specific paths can't break the mounts. To reuse data from an existing non-Docker deployment, point the `volumes:` entries in `docker-compose.yml` at your existing directories instead, e.g.:
+`DATABASE_PATH` and `UPLOAD_DIR` in `.env.local` are ignored in Docker — the compose file pins them to the container paths above so host-specific paths can't break the mounts.
+
+The `./uploads` host path can be overridden by setting `UPLOAD_HOST_DIR` in `.env.local` (e.g. to reuse an existing non-Docker deployment's directory), as long as you run Compose with `--env-file .env.local` as shown above:
+
+```bash
+# .env.local
+UPLOAD_HOST_DIR=/var/www/vhosts/photos/uploads
+```
+
+The `./data` mount isn't parameterized the same way; to relocate it, edit the `volumes:` entry in `docker-compose.yml` directly, e.g.:
 
 ```yaml
 volumes:
   - /var/www/vhosts/photos/data:/app/data
-  - /var/www/vhosts/photos/uploads:/app/uploads
+  - ${UPLOAD_HOST_DIR:-./uploads}:/app/uploads
 ```
 
 To use MySQL or PostgreSQL instead of SQLite, set the `DB_BACKEND` block in `.env.local` as usual; the `./data` mount is then unused.
@@ -123,10 +134,10 @@ To use MySQL or PostgreSQL instead of SQLite, set the `DB_BACKEND` block in `.en
 ### Operations
 
 ```bash
-docker compose logs -f      # tail app logs (replaces pm2 log files)
-docker compose restart      # restart the app
-docker compose up -d --build  # rebuild and redeploy after pulling changes
-docker compose down         # stop and remove the container (data survives)
+docker compose logs -f                              # tail app logs (replaces pm2 log files)
+docker compose restart                               # restart the app
+docker compose --env-file .env.local up -d --build   # rebuild and redeploy after pulling changes
+docker compose --env-file .env.local down            # stop and remove the container (data survives)
 ```
 
 The container restarts automatically on crashes and on boot (`restart: unless-stopped`), so a separate process manager such as pm2 is not needed.
