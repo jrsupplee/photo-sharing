@@ -107,6 +107,7 @@ export async function POST(
     storage_key: storageKey,
     thumbnail_key: variants?.thumbnailKey ?? null,
     medium_key: variants?.mediumKey ?? null,
+    high_res_key: variants?.highResKey ?? null,
     file_hash: fileHash,
   });
 

@@ -76,7 +76,7 @@ The storage key for each file is the relative path under `UPLOAD_DIR` (e.g. `my-
 
 ### Database record
 
-After storage, a row is inserted into `media` with all three storage keys (`storage_key`, `thumbnail_key`, `medium_key`), the file hash, the original filename, MIME type, size, metadata fields, and the uploader's `session_id` for ownership tracking. The insert returns `201 Created` with the new row.
+After storage, a row is inserted into `media` with all four storage keys (`storage_key`, `thumbnail_key`, `medium_key`, `high_res_key`), the file hash, the original filename, MIME type, size, metadata fields, and the uploader's `session_id` for ownership tracking. The insert returns `201 Created` with the new row.
 
 ---
 

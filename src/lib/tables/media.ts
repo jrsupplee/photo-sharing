@@ -17,6 +17,7 @@ export interface Media {
   storage_key: string;
   thumbnail_key: string | null;
   medium_key: string | null;
+  high_res_key: string | null;
   created_at: string;
   // joined fields
   album_name?: string;
@@ -50,6 +51,7 @@ export const mediaTable = {
       const mysqlCols: Record<string, string> = {
         thumbnail_key: 'VARCHAR(512)',
         medium_key: 'VARCHAR(512)',
+        high_res_key: 'VARCHAR(512)',
         deleted_at: 'DATETIME',
         deleted_by: 'VARCHAR(255)',
         file_hash: 'VARCHAR(64)',
@@ -82,6 +84,7 @@ export const mediaTable = {
       const pgCols: Record<string, string> = {
         thumbnail_key: 'VARCHAR(512)',
         medium_key: 'VARCHAR(512)',
+        high_res_key: 'VARCHAR(512)',
         deleted_at: 'TIMESTAMP',
         deleted_by: 'VARCHAR(255)',
         file_hash: 'VARCHAR(64)',
@@ -113,7 +116,7 @@ export const mediaTable = {
           FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE SET NULL
         )
       `);
-      for (const col of ['thumbnail_key', 'medium_key', 'session_id', 'deleted_at', 'deleted_by', 'file_hash']) {
+      for (const col of ['thumbnail_key', 'medium_key', 'high_res_key', 'session_id', 'deleted_at', 'deleted_by', 'file_hash']) {
         if (!(await adapter.columnExists('media', col))) {
           await adapter.exec(`ALTER TABLE media ADD COLUMN ${col} TEXT`);
         }
@@ -204,12 +207,12 @@ export const mediaTable = {
     )).map(r => r.storage_key);
   },
 
-  /** Images with missing thumbnail/medium variants — for backfill */
+  /** Images with missing thumbnail/medium/high-res variants — for backfill */
   async findMissingVariants(): Promise<{ id: number; storage_key: string; mime_type: string }[]> {
     const db = await getDb();
     return db.query<{ id: number; storage_key: string; mime_type: string }>(`
       SELECT id, storage_key, mime_type FROM media
-      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL) AND deleted_at IS NULL
+      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL OR high_res_key IS NULL) AND deleted_at IS NULL
     `);
   },
 
@@ -225,7 +228,7 @@ export const mediaTable = {
     const db = await getDb();
     const row = await db.queryOne<{ n: number }>(`
       SELECT COUNT(*) as n FROM media
-      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL) AND deleted_at IS NULL
+      WHERE mime_type LIKE 'image/%' AND (thumbnail_key IS NULL OR medium_key IS NULL OR high_res_key IS NULL) AND deleted_at IS NULL
     `);
     return Number(row!.n);
   },
@@ -251,16 +254,17 @@ export const mediaTable = {
     storage_key: string;
     thumbnail_key: string | null;
     medium_key: string | null;
+    high_res_key: string | null;
     file_hash: string | null;
   }): Promise<Media> {
     const db = await getDb();
     const result = await db.execute(`
-      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key, file_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO media (event_id, album_id, filename, original_name, mime_type, size, caption, uploader_name, session_id, storage_key, thumbnail_key, medium_key, high_res_key, file_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       fields.event_id, fields.album_id, fields.filename, fields.original_name,
       fields.mime_type, fields.size, fields.caption, fields.uploader_name,
-      fields.session_id, fields.storage_key, fields.thumbnail_key, fields.medium_key, fields.file_hash,
+      fields.session_id, fields.storage_key, fields.thumbnail_key, fields.medium_key, fields.high_res_key, fields.file_hash,
     ]);
     return (await db.queryOne<Media>('SELECT * FROM media WHERE id = ?', [result.lastInsertId]))!;
   },
@@ -274,11 +278,11 @@ export const mediaTable = {
     return (await db.queryOne<Media>('SELECT * FROM media WHERE id = ?', [id]))!;
   },
 
-  async updateVariants(id: number, thumbnailKey: string, mediumKey: string): Promise<void> {
+  async updateVariants(id: number, thumbnailKey: string, mediumKey: string, highResKey: string): Promise<void> {
     const db = await getDb();
     await db.execute(
-      'UPDATE media SET thumbnail_key = ?, medium_key = ? WHERE id = ?',
-      [thumbnailKey, mediumKey, id],
+      'UPDATE media SET thumbnail_key = ?, medium_key = ?, high_res_key = ? WHERE id = ?',
+      [thumbnailKey, mediumKey, highResKey, id],
     );
   },
 

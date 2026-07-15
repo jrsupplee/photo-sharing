@@ -31,7 +31,7 @@ export async function POST() {
       const variants = await generateImageVariants(buffer, item.storage_key, item.mime_type);
 
       if (variants) {
-        await mediaTable.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey);
+        await mediaTable.updateVariants(item.id, variants.thumbnailKey, variants.mediumKey, variants.highResKey);
         processed++;
       }
     } catch (err) {

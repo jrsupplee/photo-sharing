@@ -8,6 +8,7 @@ import { getStorage } from './storage/factory';
 export interface ImageVariants {
   thumbnailKey: string;
   mediumKey: string;
+  highResKey: string;
 }
 
 /**
@@ -45,8 +46,8 @@ async function extractVideoFrame(videoBuffer: Buffer, ext: string): Promise<Buff
 }
 
 /**
- * Generate thumbnail (400px) and medium (1200px) variants of an image or video.
- * Returns storage keys for both. Returns null for unsupported types.
+ * Generate thumbnail (400px), medium (1200px), and high-res (2048px long edge) variants
+ * of an image or video. Returns storage keys for all three. Returns null for unsupported types.
  */
 export async function generateImageVariants(
   buffer: Buffer,
@@ -69,7 +70,7 @@ export async function generateImageVariants(
   const dir = path.dirname(basePath);
   const base = path.basename(basePath, path.extname(basePath));
 
-  const [thumbBuffer, mediumBuffer] = await Promise.all([
+  const [thumbBuffer, mediumBuffer, highResBuffer] = await Promise.all([
     sharp(sourceBuffer)
       .rotate() // auto-orient from EXIF
       .resize(400, undefined, { withoutEnlargement: true })
@@ -80,12 +81,18 @@ export async function generateImageVariants(
       .resize(1200, undefined, { withoutEnlargement: true })
       .jpeg({ quality: 85, progressive: true })
       .toBuffer(),
+    sharp(sourceBuffer)
+      .rotate()
+      .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 90, progressive: true })
+      .toBuffer(),
   ]);
 
-  const [thumbnailKey, mediumKey] = await Promise.all([
+  const [thumbnailKey, mediumKey, highResKey] = await Promise.all([
     storage.save(thumbBuffer, `${dir}/${base}_thumb${jpegExt}`, 'image/jpeg'),
     storage.save(mediumBuffer, `${dir}/${base}_medium${jpegExt}`, 'image/jpeg'),
+    storage.save(highResBuffer, `${dir}/${base}_highres${jpegExt}`, 'image/jpeg'),
   ]);
 
-  return { thumbnailKey, mediumKey };
+  return { thumbnailKey, mediumKey, highResKey };
 }

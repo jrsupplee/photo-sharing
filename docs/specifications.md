@@ -112,6 +112,7 @@ The schema supports SQLite, MySQL, and PostgreSQL. Foreign keys cascade on delet
 | storage_key   | varchar                      | relative path in storage root         |
 | thumbnail_key | varchar nullable             | 400px JPEG variant                    |
 | medium_key    | varchar nullable             | 1200px JPEG variant                   |
+| high_res_key  | varchar nullable             | 2048px JPEG variant, used in lightbox |
 | file_hash     | varchar                      | SHA-256; used for duplicate detection |
 | deleted_at    | timestamp nullable           | soft-delete timestamp                 |
 | deleted_by    | varchar nullable             | session_id of deleter                 |
@@ -197,12 +198,13 @@ Currently only `disk` is implemented. Files are served via `GET /api/files/[...p
 
 Generated at upload time via Sharp:
 
-| Variant       | Max width | Format | Quality |
-| ------------- | --------- | ------ | ------- |
-| thumbnail_key | 400px     | JPEG   | 75%     |
-| medium_key    | 1200px    | JPEG   | 85%     |
+| Variant       | Max dimension       | Format | Quality |
+| ------------- | -------------------- | ------ | ------- |
+| thumbnail_key | 400px (width)         | JPEG   | 75%     |
+| medium_key    | 1200px (width)        | JPEG   | 85%     |
+| high_res_key  | 2048px (long edge)    | JPEG   | 90%     |
 
-Both variants use progressive encoding and automatic EXIF rotation. For video files, FFmpeg extracts a frame at the 1-second mark as the thumbnail.
+All variants use progressive encoding and automatic EXIF rotation. For video files, FFmpeg extracts a frame at the 1-second mark and the same variants are generated from that frame. The lightbox loads `high_res_key` (falling back to `medium_key`, then `storage_key`) instead of the original file.
 
 ---
 
@@ -435,7 +437,7 @@ Delete tab:
 
 ### 9.9 Image Variant Backfill
 
-- Admin dashboard shows count of media rows missing `thumbnail_key` or `medium_key`
+- Admin dashboard shows count of media rows missing `thumbnail_key`, `medium_key`, or `high_res_key`
 - POST to `/api/admin/backfill-variants` processes all such rows in one request
 - Used when new storage or processing logic is deployed against existing data
 

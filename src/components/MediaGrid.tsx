@@ -146,7 +146,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
   };
 
   const slides = mediaItems.map(item => ({
-    src: `/api/files/${item.medium_key ?? item.storage_key}`,
+    src: `/api/files/${item.high_res_key ?? item.medium_key ?? item.storage_key}`,
     description: item.caption || '',
   }));
 
