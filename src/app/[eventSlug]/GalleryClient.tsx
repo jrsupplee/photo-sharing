@@ -75,9 +75,10 @@ export default function GalleryClient({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const swipeAxis = useRef<'horizontal' | 'vertical' | null>(null);
   const swipeAnimating = useRef(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const swipeSequence: (number | null)[] = [null, ...albums.map(a => a.id)];
-  const swipeEnabled = !showDeleted && albums.length > 1;
+  const swipeEnabled = !showDeleted && albums.length > 1 && !lightboxOpen;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     swipeAxis.current = null;
@@ -340,7 +341,13 @@ export default function GalleryClient({
                 Share
               </Link>
             </div>
-            <MediaGrid media={displayedMedia} sessionId={sessionId} isAdmin={isAdmin} albums={isAdmin ? albums : undefined} />
+            <MediaGrid
+              media={displayedMedia}
+              sessionId={sessionId}
+              isAdmin={isAdmin}
+              albums={isAdmin ? albums : undefined}
+              onLightboxOpenChange={setLightboxOpen}
+            />
           </>
         )}
       </main>

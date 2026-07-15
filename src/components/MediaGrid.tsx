@@ -18,9 +18,10 @@ interface MediaGridProps {
   isAdmin?: boolean;
   albums?: Album[];
   onRestore?: (id: number) => void;
+  onLightboxOpenChange?: (open: boolean) => void;
 }
 
-export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore }: MediaGridProps) {
+export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore, onLightboxOpenChange }: MediaGridProps) {
   const [mediaItems, setMediaItems] = useState<Media[]>(media);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
@@ -45,6 +46,13 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
   useEffect(() => {
     setMediaItems(media);
   }, [media]);
+
+  // The lightbox renders through a portal, so its touches still bubble through the
+  // React tree to the gallery's swipe-to-change-album handler; let the parent know
+  // it's open so it can disable that handler while the lightbox is in use.
+  useEffect(() => {
+    onLightboxOpenChange?.(lightboxOpen);
+  }, [lightboxOpen, onLightboxOpenChange]);
 
   const currentMedia = mediaItems[currentIndex] ?? null;
 
