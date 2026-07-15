@@ -147,7 +147,16 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
 
   const slides = mediaItems.map(item => ({
     src: `/api/files/${item.high_res_key ?? item.medium_key ?? item.storage_key}`,
-    description: item.caption || '',
+    description: (item.caption || item.uploader_name) ? (
+      <>
+        {item.uploader_name && (
+          <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginBottom: item.caption ? '0.15rem' : 0 }}>
+            Uploaded by {item.uploader_name}
+          </div>
+        )}
+        {item.caption && <div style={{ fontStyle: 'italic' }}>{item.caption}</div>}
+      </>
+    ) : undefined,
   }));
 
   const photos = mediaItems.map((item, index) => ({
@@ -255,8 +264,7 @@ export default function MediaGrid({ media, sessionId, isAdmin, albums, onRestore
         captions={{ showToggle: false, descriptionTextAlign: 'center' }}
         styles={{
           container: { backgroundColor: 'rgba(0,0,0,0.95)' },
-          captionsTitle: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' },
-          captionsDescription: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)' },
+          captionsDescription: { fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' },
           captionsDescriptionContainer: { bottom: '4.5rem', paddingBottom: '0.5rem' },
         }}
         render={{

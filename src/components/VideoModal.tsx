@@ -148,6 +148,14 @@ export default function VideoModal({
         />
       </div>
 
+      {/* Caption / uploader */}
+      {!showEdit && (item.caption || item.uploader_name) && (
+        <div style={{ flexShrink: 0, textAlign: 'center', padding: '0 1rem 0.75rem' }}>
+          {item.uploader_name && <p style={{ fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Uploaded by {item.uploader_name}</p>}
+          {item.caption && <p style={{ fontFamily: 'var(--font-lato, sans-serif)', fontSize: '0.9rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.8)', margin: '0.15rem 0 0' }}>{item.caption}</p>}
+        </div>
+      )}
+
       {/* Action bar */}
       {showEdit ? (
         <div style={{ flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom)', background: '#171717', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
